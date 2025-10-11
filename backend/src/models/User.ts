@@ -4,7 +4,7 @@ export enum UserRole {
   ADMIN = 'admin',
   LOGISTICS_MANAGER = 'logistics_manager',
   FLEET_OPERATOR = 'fleet_operator',
-  SUSTAINABILITY_OFFICER = 'sustainability_officer',
+  SUSTAINABILITY_MANAGER = 'sustainability_manager',
 }
 
 export interface IUser extends Document {

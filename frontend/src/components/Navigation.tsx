@@ -11,7 +11,8 @@ import {
   UserIcon,
   Bars3Icon,
   XMarkIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
@@ -28,6 +29,10 @@ const adminNavigation = [
   { name: 'Simulation', href: '/dashboard/simulation', icon: CogIcon },
 ]
 
+const sustainabilityNavigation = [
+  { name: 'Sustainability', href: '/dashboard/sustainability', icon: GlobeAltIcon },
+]
+
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
@@ -39,8 +44,16 @@ export default function Navigation() {
     router.push('/')
   }
 
+  const getSustainabilityOnlyNavigation = () => [
+    { name: 'Sustainability Dashboard', href: '/dashboard/sustainability', icon: GlobeAltIcon },
+    { name: 'Environmental Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
+    { name: 'Settings', href: '/dashboard/settings', icon: CogIcon },
+  ]
+
   const allNavigation = user?.role === 'admin' 
-    ? [...navigation, ...adminNavigation]
+    ? [...navigation, ...adminNavigation, ...sustainabilityNavigation]
+    : user?.role === 'sustainability_manager'
+    ? getSustainabilityOnlyNavigation()
     : navigation
 
   return (

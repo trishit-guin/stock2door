@@ -59,6 +59,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
+  // Redirect sustainability managers to their dedicated dashboard
+  useEffect(() => {
+    if (user?.role === 'sustainability_manager') {
+      router.push('/dashboard/sustainability')
+      return
+    }
+  }, [user, router])
+
   const fetchDashboardData = async (showRefreshing = false) => {
     try {
       if (showRefreshing) setRefreshing(true)

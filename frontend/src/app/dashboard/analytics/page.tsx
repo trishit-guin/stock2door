@@ -77,7 +77,7 @@ const generateEmissionData = (currentEmissions: number) => {
 }
 
 export default function AnalyticsPage() {
-  const { addNotification } = useAppStore()
+  const { addNotification, user } = useAppStore()
   const [timeRange, setTimeRange] = useState('6m')
   const [selectedMetric, setSelectedMetric] = useState('emissions')
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
@@ -224,10 +224,13 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-text-primary">
-            Analytics & Insights
+            {user?.role === 'sustainability_manager' ? 'Environmental Analytics' : 'Analytics & Insights'}
           </h1>
           <p className="text-text-secondary mt-2">
-            Track your sustainability metrics and fleet performance.
+            {user?.role === 'sustainability_manager' 
+              ? 'Monitor environmental impact, emissions reduction, and sustainability performance.'
+              : 'Track your sustainability metrics and fleet performance.'
+            }
           </p>
         </div>
         

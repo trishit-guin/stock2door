@@ -227,7 +227,7 @@ export default function AuthPage() {
                 >
                   <option value="logistics_manager">Logistics Manager - Route optimization & delivery planning</option>
                   <option value="fleet_operator">Fleet Operator - Vehicle management & maintenance</option>
-                  <option value="sustainability_officer">Sustainability Officer - Environmental impact & reporting</option>
+                  <option value="sustainability_manager">Sustainability Manager - Sustainability strategy & compliance</option>
                 </select>
                 <p className="text-xs text-text-secondary mt-1">
                   Select the role that best matches your responsibilities. Admin access is granted separately.

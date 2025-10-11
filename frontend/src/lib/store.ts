@@ -6,7 +6,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'admin' | 'logistics_manager' | 'fleet_operator' | 'sustainability_officer'
+  role: 'admin' | 'logistics_manager' | 'fleet_operator' | 'sustainability_manager'
 }
 
 export interface Route {
