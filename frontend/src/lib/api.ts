@@ -144,12 +144,6 @@ class ApiClient {
     return response.data
   }
 
-  // Route optimization endpoints
-  public async optimizeRoute(routeData: any): Promise<any> {
-    const response = await this.client.post('/v1/optimize-route/optimize', routeData)
-    return response.data
-  }
-
   // Delivery endpoints
   public async getDeliveries(): Promise<any> {
     const response = await this.client.get('/v1/deliveries')
@@ -158,6 +152,19 @@ class ApiClient {
 
   public async createDelivery(deliveryData: any): Promise<any> {
     const response = await this.client.post('/v1/deliveries', deliveryData)
+    return response.data
+  }
+
+  // Route optimization endpoints
+  public async optimizeRoute(routeData: {
+    source: string;
+    destination: string;
+    vehicleType?: 'LCV' | 'MCV' | 'HCV' | 'THREE_WHEELER';
+    fuelType?: 'DIESEL' | 'PETROL' | 'CNG' | 'ELECTRIC';
+    includeWeather?: boolean;
+    includeAlternatives?: boolean;
+  }): Promise<any> {
+    const response = await this.client.post('/v1/optimize-route/optimize', routeData)
     return response.data
   }
 
