@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { 
   MapIcon, 
   ChartBarIcon, 
@@ -10,7 +10,8 @@ import {
   CogIcon, 
   UserIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
@@ -30,7 +31,13 @@ const adminNavigation = [
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-  const { user } = useAppStore()
+  const router = useRouter()
+  const { user, logout } = useAppStore()
+
+  const handleLogout = () => {
+    logout(true) // Show success message for manual logout
+    router.push('/')
+  }
 
   const allNavigation = user?.role === 'admin' 
     ? [...navigation, ...adminNavigation]
@@ -41,7 +48,7 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/dashboard" className="flex-shrink-0 flex items-center">
+            <Link href="/" className="flex-shrink-0 flex items-center">
               <div className="h-8 w-8 bg-accent rounded-lg flex items-center justify-center">
                 <MapIcon className="h-5 w-5 text-white" />
               </div>
@@ -75,11 +82,18 @@ export default function Navigation() {
           <div className="hidden md:flex items-center">
             <div className="flex items-center space-x-4">
               <span className="text-gray-300 text-sm">
-                {user?.name || 'Guest'}
+                {user?.name ? user.name.split(' ')[0] : 'Guest'}
               </span>
               <div className="h-8 w-8 bg-accent rounded-full flex items-center justify-center">
                 <UserIcon className="h-5 w-5 text-white" />
               </div>
+              <button
+                onClick={handleLogout}
+                className="text-gray-300 hover:text-white transition-colors"
+                title="Logout"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              </button>
             </div>
           </div>
 
@@ -124,11 +138,20 @@ export default function Navigation() {
               )
             })}
             <div className="pt-4 border-t border-gray-600">
-              <div className="flex items-center px-3 py-2">
-                <UserIcon className="h-5 w-5 text-gray-300 mr-3" />
-                <span className="text-gray-300 text-sm">
-                  {user?.name || 'Guest'}
-                </span>
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center">
+                  <UserIcon className="h-5 w-5 text-gray-300 mr-3" />
+                  <span className="text-gray-300 text-sm">
+                    {user?.name ? user.name.split(' ')[0] : 'Guest'}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-300 hover:text-white transition-colors"
+                  title="Logout"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </div>

@@ -12,59 +12,89 @@ import {
   EnvelopeIcon
 } from '@heroicons/react/24/outline'
 import { useAppStore } from '@/lib/store'
+import NotificationToast from '@/components/NotificationToast'
 
 export default function AuthPage() {
   const router = useRouter()
-  const { setUser, addNotification } = useAppStore()
+  const { login, register, isLoading: authLoading, addNotification } = useAppStore()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'logistics_manager'
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    e.stopPropagation()
+    
+    // Prevent multiple submissions
+    if (authLoading || isSubmitting) return
+    
+    // Client-side validation
+    if (!formData.email || !formData.password) {
+      addNotification({
+        type: 'error',
+        message: 'Please fill in all required fields.'
+      })
+      return
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      if (isLogin) {
-        // Mock login
-        setUser({
-          id: '1',
-          email: formData.email,
-          name: 'John Doe',
-          role: 'admin'
-        })
+    if (!isLogin) {
+      if (!formData.name) {
         addNotification({
-          type: 'success',
-          message: 'Login successful!'
+          type: 'error',
+          message: 'Please enter your full name.'
         })
+        return
+      }
+      
+      if (formData.password !== formData.confirmPassword) {
+        addNotification({
+          type: 'error',
+          message: 'Passwords do not match.'
+        })
+        return
+      }
+      
+      if (formData.password.length < 6) {
+        addNotification({
+          type: 'error',
+          message: 'Password must be at least 6 characters long.'
+        })
+        return
+      }
+    }
+    
+    setIsSubmitting(true)
+    
+    try {
+      if (isLogin) {
+        // Real login API call
+        await login(formData.email, formData.password)
+        // Redirect on successful login
         router.push('/dashboard')
       } else {
-        // Mock registration
-        setUser({
-          id: '1',
-          email: formData.email,
-          name: formData.name,
-          role: 'logistics_manager'
-        })
-        addNotification({
-          type: 'success',
-          message: 'Registration successful!'
-        })
+        // Real registration API call
+        await register(formData.name, formData.email, formData.password, formData.role)
+        // Redirect on successful registration
         router.push('/dashboard')
       }
-      setIsLoading(false)
-    }, 1000)
+    } catch (error) {
+      // Error handling is done in the store
+      // Do NOT redirect on error - stay on the auth page
+      console.error('Auth error:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -184,6 +214,27 @@ export default function AuthPage() {
               </div>
             )}
 
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Role
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
+                >
+                  <option value="logistics_manager">Logistics Manager - Route optimization & delivery planning</option>
+                  <option value="fleet_operator">Fleet Operator - Vehicle management & maintenance</option>
+                  <option value="sustainability_officer">Sustainability Officer - Environmental impact & reporting</option>
+                </select>
+                <p className="text-xs text-text-secondary mt-1">
+                  Select the role that best matches your responsibilities. Admin access is granted separately.
+                </p>
+              </div>
+            )}
+
             {isLogin && (
               <div className="flex items-center justify-between">
                 <label className="flex items-center">
@@ -201,10 +252,10 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={authLoading || isSubmitting}
               className="w-full bg-accent text-white py-3 px-4 rounded-lg font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? (
+              {(authLoading || isSubmitting) ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   {isLogin ? 'Signing in...' : 'Creating account...'}
@@ -237,6 +288,7 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
+      <NotificationToast />
     </div>
   )
 } 

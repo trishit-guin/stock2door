@@ -14,19 +14,9 @@ import { useAppStore } from '@/lib/store'
 import { formatEmissions, formatDistance, formatDuration, formatCurrency } from '@/lib/utils'
 
 export default function DashboardPage() {
-  const { user, setUser, addNotification } = useAppStore()
+  const { user } = useAppStore()
 
-  useEffect(() => {
-    // Mock user data for demo
-    if (!user) {
-      setUser({
-        id: '1',
-        email: 'admin@smartroute.com',
-        name: 'John Doe',
-        role: 'admin'
-      })
-    }
-  }, [user, setUser])
+  // No need to manually call checkAuth here - AuthGuard handles it
 
   const kpiData = [
     {

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   MapIcon, 
   TruckIcon, 
@@ -9,8 +10,20 @@ import {
   GlobeAltIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline'
+import { useAppStore } from '@/lib/store'
 
 export default function HomePage() {
+  const router = useRouter()
+  const { isAuthenticated } = useAppStore()
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    } else {
+      router.push('/auth')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -34,12 +47,12 @@ export default function HomePage() {
               <a href="#contact" className="text-text-primary hover:text-accent transition-colors">
                 Contact
               </a>
-              <Link 
-                href="/auth"
+              <button 
+                onClick={handleGetStarted}
                 className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors"
               >
                 Get Started
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -57,12 +70,12 @@ export default function HomePage() {
             fuel consumption, weather conditions, and delivery time while promoting electric vehicle adoption.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/auth"
+            <button 
+              onClick={handleGetStarted}
               className="bg-accent text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-accent/90 transition-colors"
             >
               Start Optimizing Routes
-            </Link>
+            </button>
             <Link 
               href="#features"
               className="bg-surface text-text-primary border border-gray-300 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-50 transition-colors"
@@ -194,12 +207,12 @@ export default function HomePage() {
           <p className="text-xl mb-8 opacity-90">
             Join leading companies in reducing emissions and optimizing delivery operations.
           </p>
-          <Link 
-            href="/auth"
+          <button 
+            onClick={handleGetStarted}
             className="bg-accent text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-accent/90 transition-colors"
           >
             Get Started Today
-          </Link>
+          </button>
         </div>
       </section>
 
