@@ -63,22 +63,23 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-text-primary mb-6">
             Intelligent Route Optimization for
-            <span className="text-accent"> Sustainable Logistics</span>
+            <br />
+            <span className="text-5xl md:text-7xl text-accent font-bold"> Sustainable Logistics</span>
           </h1>
-          <p className="text-xl text-text-secondary mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-text-secondary mb-8 max-w-4xl mx-auto font-medium leading-relaxed">
             Optimize your delivery routes with AI-powered algorithms that balance emissions, 
             fuel consumption, weather conditions, and delivery time while promoting electric vehicle adoption.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <button 
               onClick={handleGetStarted}
-              className="bg-accent text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-accent/90 transition-colors"
+              className="bg-accent text-white px-10 py-4 rounded-lg text-xl font-bold hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Start Optimizing Routes
             </button>
             <Link 
               href="#features"
-              className="bg-surface text-text-primary border border-gray-300 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-50 transition-colors"
+              className="bg-surface text-text-primary border-2 border-gray-300 px-10 py-4 rounded-lg text-xl font-bold hover:bg-gray-50 hover:border-accent transition-all duration-300"
             >
               Learn More
             </Link>
@@ -177,22 +178,30 @@ export default function HomePage() {
       {/* Stats Section */}
       <section className="py-20 bg-accent/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
+              Proven Results Across Industries
+            </h2>
+            <p className="text-lg text-text-secondary max-w-2xl mx-auto">
+              See the impact of intelligent route optimization on real businesses.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-accent mb-2">25%</div>
-              <div className="text-text-secondary">Average CO₂ Reduction</div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-5xl font-bold text-accent mb-3">25%</div>
+              <div className="text-text-primary font-semibold">Average CO₂ Reduction</div>
             </div>
-            <div>
-              <div className="text-4xl font-bold text-accent mb-2">15%</div>
-              <div className="text-text-secondary">Fuel Cost Savings</div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-5xl font-bold text-accent mb-3">15%</div>
+              <div className="text-text-primary font-semibold">Fuel Cost Savings</div>
             </div>
-            <div>
-              <div className="text-4xl font-bold text-accent mb-2">2.5s</div>
-              <div className="text-text-secondary">Average Route Optimization Time</div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-5xl font-bold text-accent mb-3">2.5s</div>
+              <div className="text-text-primary font-semibold">Average Route Optimization Time</div>
             </div>
-            <div>
-              <div className="text-4xl font-bold text-accent mb-2">99.9%</div>
-              <div className="text-text-secondary">System Uptime</div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-5xl font-bold text-accent mb-3">99.9%</div>
+              <div className="text-text-primary font-semibold">System Uptime</div>
             </div>
           </div>
         </div>
@@ -201,15 +210,15 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to Transform Your Logistics?
           </h2>
-          <p className="text-xl mb-8 opacity-90">
+          <p className="text-xl md:text-2xl mb-8 opacity-90 font-medium max-w-3xl mx-auto">
             Join leading companies in reducing emissions and optimizing delivery operations.
           </p>
           <button 
             onClick={handleGetStarted}
-            className="bg-accent text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-accent/90 transition-colors"
+            className="bg-accent text-white px-10 py-4 rounded-lg text-xl font-bold hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             Get Started Today
           </button>

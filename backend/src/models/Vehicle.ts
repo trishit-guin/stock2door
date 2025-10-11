@@ -6,9 +6,8 @@ export interface IVehicle {
   model: string;
   year: number;
   fuelType: string;
+  vehicleNumber: string;
   capacity: number;
-  range: number;
-  emissionsFactor: number;
   assignedCluster?: mongoose.Types.ObjectId;
   createdAt: Date;
 }
@@ -19,9 +18,19 @@ const VehicleSchema = new Schema<IVehicle>({
   model: { type: String, required: true },
   year: { type: Number, required: true },
   fuelType: { type: String, required: true },
-  capacity: { type: Number, required: true },
-  range: { type: Number, required: true },
-  emissionsFactor: { type: Number, required: true },
+  vehicleNumber: { type: String, required: true, unique: true },
+  capacity: { 
+    type: Number, 
+    default: function() {
+      switch(this.type) {
+        case 'LCV': return 1000;
+        case 'MCV': return 5000;
+        case 'HCV': return 15000;
+        case 'THREE_WHEELER': return 500;
+        default: return 1000;
+      }
+    }
+  },
   assignedCluster: { type: Schema.Types.ObjectId, ref: 'Cluster' },
   createdAt: { type: Date, default: Date.now },
 });

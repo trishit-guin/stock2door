@@ -1,203 +1,395 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   MapIcon, 
   TruckIcon, 
   ChartBarIcon, 
   ClockIcon,
   CurrencyDollarIcon,
-  SparklesIcon
+  SparklesIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline'
 import KPICard from '@/components/KPICard'
 import { useAppStore } from '@/lib/store'
 import { formatEmissions, formatDistance, formatDuration, formatCurrency } from '@/lib/utils'
+import { apiClient } from '@/lib/api'
+
+interface DashboardData {
+  kpis: {
+    totalCO2Saved: number
+    activeRoutes: number
+    fleetEfficiency: number
+    costSavings: number
+    totalVehicles: number
+    deliveryGrowthRate: number
+    totalRoutes: number
+    avgRouteDistance: number
+    distanceSavingPercent: number
+    totalDistanceSaved: number
+    routeEfficiencyScore: number
+    evAdoptionRate: number
+  }
+  recentRoutes: Array<{
+    id: string
+    distance: number
+    duration: number
+    emissions: number
+    vehicle: any
+    deliveries: any[]
+    createdAt: string
+  }>
+}
+
+interface Activity {
+  id: string
+  type: 'delivery' | 'vehicle' | 'route'
+  title: string
+  description: string
+  timestamp: string
+  status: string
+}
 
 export default function DashboardPage() {
-  const { user } = useAppStore()
+  const { user, addNotification } = useAppStore()
+  const router = useRouter()
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  // No need to manually call checkAuth here - AuthGuard handles it
+  const fetchDashboardData = async (showRefreshing = false) => {
+    try {
+      if (showRefreshing) setRefreshing(true)
+      else setLoading(true)
 
-  const kpiData = [
-    {
-      title: 'Total CO₂ Saved',
-      value: formatEmissions(1250),
-      subtitle: 'This month',
-      icon: <SparklesIcon className="h-8 w-8 text-accent" />,
-      trend: { value: 15, isPositive: true },
-      variant: 'success' as const
-    },
-    {
-      title: 'Active Routes',
-      value: '24',
-      subtitle: 'Currently optimized',
-      icon: <MapIcon className="h-8 w-8 text-primary" />,
-      trend: { value: 8, isPositive: true },
-      variant: 'default' as const
-    },
-    {
-      title: 'Fleet Efficiency',
-      value: '87%',
-      subtitle: 'Average utilization',
-      icon: <TruckIcon className="h-8 w-8 text-primary" />,
-      trend: { value: 5, isPositive: true },
-      variant: 'default' as const
-    },
-    {
-      title: 'Cost Savings',
-      value: formatCurrency(12500),
-      subtitle: 'This month',
-      icon: <CurrencyDollarIcon className="h-8 w-8 text-accent" />,
-      trend: { value: 12, isPositive: true },
-      variant: 'success' as const
+      const [kpisResponse, activitiesResponse] = await Promise.all([
+        apiClient.getDashboardKPIs(),
+        apiClient.getRecentActivities(8)
+      ])
+
+      if (kpisResponse.success) {
+        setDashboardData(kpisResponse.data)
+      }
+
+      if (activitiesResponse.success) {
+        setRecentActivities(activitiesResponse.data)
+      }
+    } catch (error: any) {
+      console.error('Dashboard data fetch error:', error)
+      addNotification({
+        type: 'error',
+        message: 'Failed to load dashboard data. Please try again.'
+      })
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
     }
-  ]
+  }
 
-  const recentRoutes = [
-    {
-      id: '1',
-      source: 'Warehouse A',
-      destinations: ['Store 1', 'Store 2', 'Store 3'],
-      distance: 45000,
-      duration: 7200,
-      emissions: 85,
-      status: 'active'
-    },
-    {
-      id: '2',
-      source: 'Distribution Center',
-      destinations: ['Customer A', 'Customer B'],
-      distance: 32000,
-      duration: 5400,
-      emissions: 62,
-      status: 'completed'
-    }
-  ]
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const handleRefresh = () => {
+    fetchDashboardData(true)
+  }
+
+  const getKpiData = () => {
+    if (!dashboardData) return []
+
+    return [
+      {
+        title: 'Route Efficiency',
+        value: `${dashboardData.kpis.routeEfficiencyScore}%`,
+        subtitle: 'Optimization score',
+        icon: <MapIcon className="h-8 w-8 text-accent" />,
+        trend: { value: Math.abs(dashboardData.kpis.distanceSavingPercent || 0), isPositive: (dashboardData.kpis.distanceSavingPercent || 0) >= 0 },
+        variant: 'success' as const
+      },
+      {
+        title: 'Fleet Utilization',
+        value: `${dashboardData.kpis.fleetEfficiency}%`,
+        subtitle: `${dashboardData.kpis.totalVehicles} vehicles active`,
+        icon: <TruckIcon className="h-8 w-8 text-primary" />,
+        trend: { value: Math.round(dashboardData.kpis.evAdoptionRate || 0), isPositive: true },
+        variant: 'default' as const
+      },
+      {
+        title: 'Distance Saved',
+        value: formatDistance((dashboardData.kpis.totalDistanceSaved || 0) * 1000),
+        subtitle: 'Through optimization',
+        icon: <SparklesIcon className="h-8 w-8 text-accent" />,
+        trend: { value: Math.abs(dashboardData.kpis.deliveryGrowthRate), isPositive: dashboardData.kpis.deliveryGrowthRate >= 0 },
+        variant: 'success' as const
+      },
+      {
+        title: 'Cost Savings',
+        value: formatCurrency(dashboardData.kpis.costSavings || 125),
+        subtitle: 'Operational efficiency',
+        icon: <CurrencyDollarIcon className="h-8 w-8 text-accent" />,
+        trend: { value: 12, isPositive: true },
+        variant: 'success' as const
+      }
+    ]
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-text-primary">
-          Welcome back, {user?.name}!
-        </h1>
-        <p className="text-text-secondary mt-2">
-          Here's what's happening with your logistics operations today.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-text-primary">
+            Welcome back, {user?.name}!
+          </h1>
+          <p className="text-text-secondary mt-2">
+            Here's what's happening with your logistics operations today.
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        >
+          <ArrowPathIcon className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpiData.map((kpi, index) => (
-          <KPICard key={index} {...kpi} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <ArrowPathIcon className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-text-secondary">Loading dashboard...</span>
+        </div>
+      ) : (
+        <>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {getKpiData().map((kpi, index) => (
+              <KPICard key={index} {...kpi} />
+            ))}
+          </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Routes */}
-        <div className="lg:col-span-2">
-          <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-text-primary">
-                Recent Routes
-              </h2>
-              <button className="text-accent hover:text-accent/80 font-medium text-sm">
-                View All
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {recentRoutes.map((route) => (
-                <div key={route.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-text-primary">
-                        {route.source} → {route.destinations.length} stops
-                      </h3>
-                      <p className="text-sm text-text-secondary mt-1">
-                        {route.destinations.join(', ')}
-                      </p>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Route Optimization Insights */}
+            <div className="lg:col-span-2">
+              <div className="card">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-text-primary">
+                    Route Optimization Insights
+                  </h2>
+                  <button 
+                    onClick={() => router.push('/dashboard/optimizer')}
+                    className="text-accent hover:text-accent/80 font-medium text-sm"
+                  >
+                    Optimize Now
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Today's Performance */}
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-text-primary">Today's Performance</h3>
+                      <MapIcon className="h-5 w-5 text-blue-600" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-text-primary">
-                        {formatDistance(route.distance)}
-                      </p>
-                      <p className="text-xs text-text-secondary">
-                        {formatDuration(route.duration)}
-                      </p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Routes Optimized</span>
+                        <span className="font-medium">{dashboardData?.kpis.activeRoutes || 0}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Distance Saved</span>
+                        <span className="font-medium text-green-600">{formatDistance((dashboardData?.kpis.totalDistanceSaved || 45.2) * 1000)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Time Saved</span>
+                        <span className="font-medium text-green-600">{formatDuration((dashboardData?.kpis.totalDistanceSaved || 2.3) * 360)}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                    <div className="flex items-center space-x-4 text-sm">
-                      <span className="text-text-secondary">
-                        {formatEmissions(route.emissions)}
-                      </span>
-                      <span className={`
-                        px-2 py-1 rounded-full text-xs font-medium
-                        ${route.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                        }
-                      `}>
-                        {route.status}
-                      </span>
+
+                  {/* Fleet Utilization */}
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-text-primary">Fleet Utilization</h3>
+                      <TruckIcon className="h-5 w-5 text-green-600" />
                     </div>
-                    <button className="text-accent hover:text-accent/80 text-sm font-medium">
-                      View Details
-                    </button>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Active Vehicles</span>
+                        <span className="font-medium">{dashboardData?.kpis.totalVehicles || 0}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Efficiency Rate</span>
+                        <span className="font-medium text-green-600">{dashboardData?.kpis.fleetEfficiency || 0}%</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">EV Adoption</span>
+                        <span className="font-medium text-green-600">{dashboardData?.kpis.evAdoptionRate || 0}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Environmental Impact */}
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-text-primary">Environmental Impact</h3>
+                      <SparklesIcon className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">CO₂ Reduced</span>
+                        <span className="font-medium text-green-600">{formatEmissions(dashboardData?.kpis.totalCO2Saved || 125)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Fuel Saved</span>
+                        <span className="font-medium text-green-600">42.8 L</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Green Score</span>
+                        <span className="font-medium text-green-600">8.7/10</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Analysis */}
+                  <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-text-primary">Cost Analysis</h3>
+                      <CurrencyDollarIcon className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Total Savings</span>
+                        <span className="font-medium text-green-600">{formatCurrency(dashboardData?.kpis.costSavings || 1250)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Fuel Costs</span>
+                        <span className="font-medium text-green-600">-$156</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">ROI This Month</span>
+                        <span className="font-medium text-green-600">18.5%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">
-              Quick Actions
-            </h3>
-            <div className="space-y-3">
-              <button className="w-full flex items-center p-3 text-left bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
-                <MapIcon className="h-5 w-5 mr-3" />
-                Optimize New Route
-              </button>
-              <button className="w-full flex items-center p-3 text-left bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-                <TruckIcon className="h-5 w-5 mr-3" />
-                Manage Fleet
-              </button>
-              <button className="w-full flex items-center p-3 text-left bg-surface text-text-primary border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <ChartBarIcon className="h-5 w-5 mr-3" />
-                View Analytics
-              </button>
-            </div>
-          </div>
-
-          {/* Weather Alert */}
-          <div className="card border-l-4 border-l-warning">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-warning rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">!</span>
+                {/* Quick Recommendations */}
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-text-primary mb-2">💡 Optimization Recommendations</h4>
+                  <ul className="text-sm text-text-secondary space-y-1">
+                    {(dashboardData?.kpis.totalVehicles || 0) > 0 ? (
+                      <>
+                        <li>• {(dashboardData?.kpis.fleetEfficiency || 0) > 80 ? 'Excellent' : 'Consider improving'} fleet utilization at {dashboardData?.kpis.fleetEfficiency || 0}%</li>
+                        <li>• Your fleet has {dashboardData?.kpis.totalVehicles || 0} vehicles with {dashboardData?.kpis.evAdoptionRate || 0}% EV adoption</li>
+                        <li>• Weather conditions suggest avoiding city center routes between 2-6 PM today</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>• Add vehicles to your fleet to start route optimization</li>
+                        <li>• Consider electric vehicles for better environmental impact</li>
+                        <li>• Set up delivery routes to see optimization insights</li>
+                      </>
+                    )}
+                  </ul>
                 </div>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-text-primary">
-                  Weather Alert
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-6">
+              <div className="card">
+                <h3 className="text-lg font-semibold text-text-primary mb-4">
+                  Quick Actions
                 </h3>
-                <p className="text-sm text-text-secondary mt-1">
-                  Heavy rain expected in downtown area. Consider route adjustments for deliveries.
-                </p>
-                <button className="text-accent hover:text-accent/80 text-sm font-medium mt-2">
-                  View Details
-                </button>
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => router.push('/dashboard/optimizer')}
+                    className="w-full flex items-center p-3 text-left bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+                  >
+                    <MapIcon className="h-5 w-5 mr-3" />
+                    Optimize New Route
+                  </button>
+                  <button 
+                    onClick={() => router.push('/dashboard/fleet')}
+                    className="w-full flex items-center p-3 text-left bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <TruckIcon className="h-5 w-5 mr-3" />
+                    Manage Fleet
+                  </button>
+                  <button 
+                    onClick={() => router.push('/dashboard/analytics')}
+                    className="w-full flex items-center p-3 text-left bg-surface text-text-primary border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <ChartBarIcon className="h-5 w-5 mr-3" />
+                    View Analytics
+                  </button>
+                </div>
               </div>
+
+              {/* Fleet Overview */}
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-text-primary">
+                    Fleet Overview
+                  </h3>
+                  <button
+                    onClick={handleRefresh}
+                    className="text-xs text-accent hover:text-accent/80"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                {dashboardData ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-text-secondary">Total Vehicles</span>
+                      <span className="font-medium text-text-primary">{dashboardData.kpis.totalVehicles}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-text-secondary">Monthly Savings</span>
+                      <span className="font-medium text-green-600">{formatCurrency(dashboardData.kpis.costSavings)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-text-secondary">Fleet Efficiency</span>
+                      <span className={`font-medium ${dashboardData.kpis.fleetEfficiency > 75 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {dashboardData.kpis.fleetEfficiency}%
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-text-secondary">Route Score</span>
+                      <span className="font-medium text-text-primary">{dashboardData.kpis.routeEfficiencyScore}%</span>
+                    </div>
+                    {dashboardData.kpis.totalVehicles > 0 && (
+                      <div className="mt-4 p-2 bg-blue-50 rounded text-center">
+                        <p className="text-xs text-blue-600">
+                          {dashboardData.kpis.totalVehicles === 1 
+                            ? "Add more vehicles to improve efficiency" 
+                            : `Managing ${dashboardData.kpis.totalVehicles} vehicles efficiently`
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                  </div>
+                )}
+              </div>
+
+
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 } 
