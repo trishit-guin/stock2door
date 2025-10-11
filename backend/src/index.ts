@@ -34,10 +34,20 @@ app.get('/api/health', (req, res) => {
 
 export default app;
 
-connectDB().then(() => {
+// Start server with graceful DB connection handling
+const startServer = async () => {
+  try {
+    await connectDB();
+  } catch (error) {
+    console.log('Starting server without database connection...');
+  }
+  
   if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
       console.log(`SmartRoute backend running on port ${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/api/health`);
     });
   }
-});
+};
+
+startServer();

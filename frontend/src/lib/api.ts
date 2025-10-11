@@ -123,6 +123,17 @@ class ApiClient {
     return response.data
   }
 
+  public async getFleetStatus(): Promise<any> {
+    const response = await this.client.get('/v1/analytics/fleet-status')
+    return response.data
+  }
+
+  public async getRecentActivities(limit?: number): Promise<any> {
+    const params = limit ? { limit } : {}
+    const response = await this.client.get('/v1/analytics/recent-activities', { params })
+    return response.data
+  }
+
   // Vehicle endpoints
   public async getVehicles(): Promise<any> {
     const response = await this.client.get('/v1/vehicles')
