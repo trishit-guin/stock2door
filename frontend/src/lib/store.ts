@@ -46,6 +46,11 @@ interface AppState {
     message: string
     timestamp: Date
   }>
+  optimizationWeights: {
+    emissionsWeight: number
+    timeWeight: number
+    costWeight: number
+  }
   
   // Auth Actions
   setUser: (user: User | null) => void
@@ -62,6 +67,9 @@ interface AppState {
   addNotification: (notification: Omit<AppState['notifications'][0], 'id' | 'timestamp'>) => void
   removeNotification: (id: string) => void
   clearNotifications: () => void
+  
+  // Optimization Actions
+  updateOptimizationWeights: (weights: { emissionsWeight?: number; timeWeight?: number; costWeight?: number }) => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -74,6 +82,11 @@ export const useAppStore = create<AppState>()(
       routes: [],
       isLoading: false,
       notifications: [],
+      optimizationWeights: {
+        emissionsWeight: 40,
+        timeWeight: 35,
+        costWeight: 25
+      },
       
       // Auth Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -223,14 +236,20 @@ export const useAppStore = create<AppState>()(
       removeNotification: (id) => set((state) => ({
         notifications: state.notifications.filter(n => n.id !== id)
       })),
-      clearNotifications: () => set({ notifications: [] })
+      clearNotifications: () => set({ notifications: [] }),
+      
+      // Optimization Actions
+      updateOptimizationWeights: (weights) => set((state) => ({
+        optimizationWeights: { ...state.optimizationWeights, ...weights }
+      }))
     }),
     {
       name: 'smartroute-auth',
       partialize: (state) => ({ 
         user: state.user, 
         token: state.token, 
-        isAuthenticated: state.isAuthenticated 
+        isAuthenticated: state.isAuthenticated,
+        optimizationWeights: state.optimizationWeights
       }),
       onRehydrateStorage: () => (state) => {
         // Restore token to API client when store is hydrated

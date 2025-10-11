@@ -106,32 +106,145 @@ class OpenWeatherService {
     startLat: number,
     startLon: number,
     endLat: number,
-    endLon: number
-  ): Promise<{ start: WeatherData; end: WeatherData; midpoint?: WeatherData }> {
+    endLon: number,
+    routeDurationMinutes?: number,
+    departureTime?: Date,
+    routeSteps?: Array<{ start_location: { lat: number; lng: number }; end_location: { lat: number; lng: number }; duration: { value: number } }>
+  ): Promise<{ waypoints: WeatherData[]; overall_safety_score: number; route_recommendations: string[]; total_waypoints: number }> {
     try {
-      // Calculate midpoint for long routes
-      const midLat = (startLat + endLat) / 2;
-      const midLon = (startLon + endLon) / 2;
+      const waypoints: Array<{ lat: number; lon: number; estimatedArrivalTime: Date; distanceFromStart: number }> = [];
       
-      // Get distance to determine if we need midpoint weather
-      const distance = this.calculateDistance(startLat, startLon, endLat, endLon);
+      // Set departure time (default to now if not provided)
+      const startTime = departureTime || new Date();
+      const totalDurationMinutes = routeDurationMinutes || 120; // Default 2 hours if not provided
       
-      const promises = [
-        this.getCurrentWeather(startLat, startLon),
-        this.getCurrentWeather(endLat, endLon)
-      ];
-
-      // For routes > 500km, also get midpoint weather
-      if (distance > 500) {
-        promises.push(this.getCurrentWeather(midLat, midLon));
+      if (routeSteps && routeSteps.length > 0) {
+        // Use actual route steps to generate waypoints
+        let cumulativeTime = 0;
+        let cumulativeDistance = 0;
+        
+        // Always include start point
+        waypoints.push({ 
+          lat: startLat, 
+          lon: startLon, 
+          estimatedArrivalTime: startTime, 
+          distanceFromStart: 0 
+        });
+        
+        // Add waypoints based on route steps at regular intervals (every ~100km or every 20-30 steps)
+        const stepInterval = Math.max(1, Math.floor(routeSteps.length / 5)); // Divide route into ~5 segments
+        
+        for (let i = stepInterval; i < routeSteps.length; i += stepInterval) {
+          const step = routeSteps[i];
+          
+          // Calculate cumulative time up to this step
+          for (let j = Math.max(0, i - stepInterval); j <= i; j++) {
+            cumulativeTime += routeSteps[j].duration.value; // in seconds
+          }
+          
+          // Calculate distance from start using coordinate distance
+          cumulativeDistance = this.calculateDistance(startLat, startLon, step.start_location.lat, step.start_location.lng);
+          
+          const estimatedArrivalTime = new Date(startTime.getTime() + cumulativeTime * 1000); // Convert seconds to milliseconds
+          
+          waypoints.push({ 
+            lat: step.start_location.lat, 
+            lon: step.start_location.lng, 
+            estimatedArrivalTime, 
+            distanceFromStart: cumulativeDistance 
+          });
+        }
+        
+        // Always include end point
+        const totalTime = routeSteps.reduce((sum, step) => sum + step.duration.value, 0);
+        const totalDistance = this.calculateDistance(startLat, startLon, endLat, endLon);
+        const endTime = new Date(startTime.getTime() + totalTime * 1000);
+        
+        waypoints.push({ 
+          lat: endLat, 
+          lon: endLon, 
+          estimatedArrivalTime: endTime, 
+          distanceFromStart: totalDistance 
+        });
+      } else {
+        // Fallback to straight-line waypoints if no route steps provided
+        const totalDistance = this.calculateDistance(startLat, startLon, endLat, endLon);
+        const intervalKm = 125; // 125km intervals
+        const numIntervals = Math.ceil(totalDistance / intervalKm);
+        
+        // Always include start point
+        waypoints.push({ 
+          lat: startLat, 
+          lon: startLon, 
+          estimatedArrivalTime: startTime, 
+          distanceFromStart: 0 
+        });
+        
+        // Add intermediate waypoints for long routes
+        if (numIntervals > 1) {
+          for (let i = 1; i < numIntervals; i++) {
+            const ratio = i / numIntervals;
+            const lat = startLat + (endLat - startLat) * ratio;
+            const lon = startLon + (endLon - startLon) * ratio;
+            const distanceFromStart = totalDistance * ratio;
+            
+            const timeRatio = ratio;
+            const estimatedArrivalMinutes = totalDurationMinutes * timeRatio;
+            const estimatedArrivalTime = new Date(startTime.getTime() + estimatedArrivalMinutes * 60 * 1000);
+            
+            waypoints.push({ 
+              lat, 
+              lon, 
+              estimatedArrivalTime, 
+              distanceFromStart 
+            });
+          }
+        }
+        
+        // Always include end point (unless it's the same as start)
+        if (totalDistance > 10) {
+          const endTime = new Date(startTime.getTime() + totalDurationMinutes * 60 * 1000);
+          waypoints.push({ 
+            lat: endLat, 
+            lon: endLon, 
+            estimatedArrivalTime: endTime, 
+            distanceFromStart: totalDistance 
+          });
+        }
       }
-
-      const results = await Promise.all(promises);
+      
+      // Get forecast weather data for all waypoints based on arrival times
+      const weatherPromises = waypoints.map(point => 
+        this.getForecastAtTime(point.lat, point.lon, point.estimatedArrivalTime)
+      );
+      
+      const weatherResults = await Promise.all(weatherPromises);
+      
+      // Add arrival time and sequence information to weather results
+      const enrichedWeatherResults = weatherResults.map((weather: WeatherData, index: number) => ({
+        ...weather,
+        estimated_arrival_time: waypoints[index].estimatedArrivalTime.toISOString(),
+        distance_from_start: Math.round(waypoints[index].distanceFromStart),
+        sequence: index + 1
+      }));
+      
+      // Calculate overall safety metrics
+      const safetyScores = enrichedWeatherResults.map((w: any) => w.driving_conditions.safety_score);
+      const overallSafetyScore = Math.min(...safetyScores);
+      
+      // Collect unique recommendations
+      const allRecommendations = new Set<string>();
+      enrichedWeatherResults.forEach((weather: any) => {
+        weather.driving_conditions.recommendations.forEach((rec: string) => 
+          allRecommendations.add(rec)
+        );
+      });
       
       return {
-        start: results[0],
-        end: results[1],
-        midpoint: results[2] || undefined
+        waypoints: enrichedWeatherResults,
+        overall_safety_score: overallSafetyScore,
+        route_recommendations: Array.from(allRecommendations),
+        total_waypoints: waypoints.length
       };
     } catch (error) {
       console.error('Route weather error:', error);
@@ -172,6 +285,85 @@ class OpenWeatherService {
     } catch (error) {
       console.error('Weather forecast error:', error);
       throw new Error('Failed to fetch weather forecast');
+    }
+  }
+
+  /**
+   * Get weather forecast for a specific location at a specific time
+   */
+  async getForecastAtTime(lat: number, lon: number, targetTime: Date): Promise<WeatherData> {
+    try {
+      const now = new Date();
+      const hoursFromNow = Math.max(0, (targetTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+      
+      // If the target time is more than 5 days in the future, use the last available forecast
+      const maxForecastHours = 120; // 5 days * 24 hours
+      const effectiveHours = Math.min(hoursFromNow, maxForecastHours);
+      
+      // If target time is in the past or very near future (< 1 hour), get current weather
+      if (effectiveHours < 1) {
+        return await this.getCurrentWeather(lat, lon);
+      }
+      
+      const response = await axios.get(`${this.baseUrl}/forecast`, {
+        params: {
+          lat,
+          lon,
+          appid: this.apiKey,
+          units: 'metric',
+          lang: 'en'
+        }
+      });
+
+      // Find the forecast entry closest to our target time
+      const forecastList = response.data.list;
+      let closestForecast = forecastList[0];
+      let smallestTimeDiff = Math.abs(new Date(closestForecast.dt * 1000).getTime() - targetTime.getTime());
+      
+      for (const item of forecastList) {
+        const forecastTime = new Date(item.dt * 1000);
+        const timeDiff = Math.abs(forecastTime.getTime() - targetTime.getTime());
+        
+        if (timeDiff < smallestTimeDiff) {
+          smallestTimeDiff = timeDiff;
+          closestForecast = item;
+        }
+      }
+      
+      // Get location info from the response
+      const locationData = response.data.city;
+      
+      // Transform the forecast data to match our WeatherData interface
+      const weatherData: WeatherData = {
+        location: {
+          name: locationData.name,
+          country: locationData.country,
+          lat: locationData.coord.lat,
+          lon: locationData.coord.lon
+        },
+        current: {
+          temperature: Math.round(closestForecast.main.temp),
+          feels_like: Math.round(closestForecast.main.feels_like),
+          humidity: closestForecast.main.humidity,
+          pressure: closestForecast.main.pressure,
+          visibility: closestForecast.visibility || 10000,
+          uv_index: 0, // Not available in forecast API
+          wind_speed: closestForecast.wind?.speed || 0,
+          wind_direction: closestForecast.wind?.deg || 0,
+          weather_condition: closestForecast.weather[0].main,
+          weather_description: closestForecast.weather[0].description,
+          weather_icon: closestForecast.weather[0].icon,
+          precipitation: (closestForecast.rain?.['3h'] || 0) + (closestForecast.snow?.['3h'] || 0),
+          cloud_cover: closestForecast.clouds.all
+        },
+        driving_conditions: this.calculateDrivingConditions(closestForecast)
+      };
+      
+      return weatherData;
+    } catch (error) {
+      console.error('Forecast at time error:', error);
+      // Fallback to current weather if forecast fails
+      return await this.getCurrentWeather(lat, lon);
     }
   }
 

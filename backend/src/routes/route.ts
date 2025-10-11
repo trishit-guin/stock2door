@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateJWT } from '../middlewares/auth';
 import { body } from 'express-validator';
-import { optimizeRoute } from '../controllers/routeController';
+import { optimizeRoute, getAlternativeRouteWeather } from '../controllers/routeController';
 
 const router = express.Router();
 
@@ -29,6 +29,16 @@ router.post('/optimize',
   body('vehicleType').optional().isIn(['LCV', 'MCV', 'HCV', 'THREE_WHEELER']),
   body('fuelType').optional().isIn(['DIESEL', 'PETROL', 'CNG', 'ELECTRIC']),
   optimizeRoute
+);
+
+// Get weather for alternative route
+router.post('/alternative-weather',
+  authenticateJWT,
+  body('startLat').isNumeric().withMessage('Start latitude is required'),
+  body('startLng').isNumeric().withMessage('Start longitude is required'),
+  body('endLat').isNumeric().withMessage('End latitude is required'),
+  body('endLng').isNumeric().withMessage('End longitude is required'),
+  getAlternativeRouteWeather
 );
 
 export default router; 

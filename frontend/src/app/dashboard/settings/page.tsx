@@ -34,7 +34,7 @@ interface Settings {
 }
 
 export default function SettingsPage() {
-  const { user, addNotification } = useAppStore()
+  const { user, addNotification, optimizationWeights, updateOptimizationWeights } = useAppStore()
   const [settings, setSettings] = useState<Settings>({
     notifications: {
       email: true,
@@ -49,9 +49,9 @@ export default function SettingsPage() {
       units: 'metric'
     },
     optimization: {
-      emissionsWeight: 40,
-      timeWeight: 35,
-      costWeight: 25,
+      emissionsWeight: optimizationWeights.emissionsWeight,
+      timeWeight: optimizationWeights.timeWeight,
+      costWeight: optimizationWeights.costWeight,
       weatherAware: true,
       evCompatible: true
     }
@@ -72,6 +72,11 @@ export default function SettingsPage() {
         [type]: value
       }
     }))
+    
+    // Update global store for route optimization
+    if (type === 'emissionsWeight' || type === 'timeWeight' || type === 'costWeight') {
+      updateOptimizationWeights({ [type]: value })
+    }
   }
 
   return (

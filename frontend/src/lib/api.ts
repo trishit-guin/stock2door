@@ -163,8 +163,30 @@ class ApiClient {
     fuelType?: 'DIESEL' | 'PETROL' | 'CNG' | 'ELECTRIC';
     includeWeather?: boolean;
     includeAlternatives?: boolean;
+    optimizationWeights?: {
+      emissionsWeight: number;
+      timeWeight: number;
+      costWeight: number;
+    };
   }): Promise<any> {
     const response = await this.client.post('/v1/optimize-route/optimize', routeData)
+    return response.data
+  }
+
+  public async getAlternativeRouteWeather(weatherData: {
+    routeIndex: number;
+    startLat: number;
+    startLng: number;
+    endLat: number;
+    endLng: number;
+    duration?: number;
+    routeSteps?: Array<{
+      start_location: { lat: number; lng: number };
+      end_location: { lat: number; lng: number };
+      duration: { value: number };
+    }>;
+  }): Promise<any> {
+    const response = await this.client.post('/v1/optimize-route/alternative-weather', weatherData)
     return response.data
   }
 
