@@ -134,6 +134,19 @@ class ApiClient {
     return response.data
   }
 
+  public async getTimeSeriesData(timeRange?: string, metric?: string): Promise<any> {
+    const params: any = {}
+    if (timeRange) params.timeRange = timeRange
+    if (metric) params.metric = metric
+    const response = await this.client.get('/v1/analytics/time-series', { params })
+    return response.data
+  }
+
+  public async getRouteEfficiencyAnalysis(): Promise<any> {
+    const response = await this.client.get('/v1/analytics/route-efficiency')
+    return response.data
+  }
+
   // Vehicle endpoints
   public async getVehicles(): Promise<any> {
     const response = await this.client.get('/v1/vehicles')

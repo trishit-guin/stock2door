@@ -278,15 +278,6 @@ export default function AuthPage() {
             </p>
           </div>
         </div>
-
-        {/* Demo Credentials */}
-        <div className="text-center">
-          <p className="text-sm text-text-secondary mb-2">Demo Credentials:</p>
-          <div className="text-xs text-text-secondary space-y-1">
-            <p>Email: admin@smartroute.com</p>
-            <p>Password: password123</p>
-          </div>
-        </div>
       </div>
       <NotificationToast />
     </div>
