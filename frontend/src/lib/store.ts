@@ -2,13 +2,17 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiClient } from './api'
 
+// User type with combined roles from both systems
 export interface User {
   id: string
   email: string
-  name: string
-  role: 'admin' | 'logistics_manager' | 'fleet_operator' | 'sustainability_manager'
+  name?: string
+  firstName?: string
+  lastName?: string
+  role: 'admin' | 'logistics_manager' | 'fleet_operator' | 'sustainability_manager' | 'manager' | 'staff'
 }
 
+// SmartRoute Types
 export interface Route {
   id: string
   source: string
@@ -33,60 +37,123 @@ export interface DeliveryPlan {
   createdAt: Date
 }
 
+// Stock2Door Types
+export interface Product {
+  _id: string
+  name: string
+  sku: string
+  category?: string
+  uom?: string
+  price: number
+  minStock: number
+  totalStock: number
+  stockLevels?: Array<{
+    warehouseId: string
+    quantity: number
+  }>
+  createdAt: Date
+}
+
+export interface Warehouse {
+  _id: string
+  name: string
+  address?: string
+  city?: string
+  state?: string
+  pincode?: string
+  createdAt: Date
+}
+
+export interface Operation {
+  _id: string
+  type: 'receipt' | 'delivery' | 'transfer' | 'adjustment'
+  productId: string
+  quantity: number
+  warehouseId: string
+  status: 'pending' | 'validated' | 'cancelled'
+  createdBy: string
+  createdAt: Date
+}
+
 interface AppState {
+  // Auth & User
   user: User | null
   token: string | null
   isAuthenticated: boolean
+  isLoading: boolean
+  
+  // SmartRoute State
   currentDeliveryPlan: DeliveryPlan | null
   routes: Route[]
-  isLoading: boolean
-  notifications: Array<{
-    id: string
-    type: 'success' | 'error' | 'warning'
-    message: string
-    timestamp: Date
-  }>
   optimizationWeights: {
     emissionsWeight: number
     timeWeight: number
     costWeight: number
   }
   
+  // Stock2Door State
+  products: Product[]
+  warehouses: Warehouse[]
+  operations: Operation[]
+  lowStockItems: Product[]
+  
+  // Notifications
+  notifications: Array<{
+    id: string
+    type: 'success' | 'error' | 'warning'
+    message: string
+    timestamp: Date
+  }>
+  
   // Auth Actions
   setUser: (user: User | null) => void
   setToken: (token: string | null) => void
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string, role: string) => Promise<void>
+  register: (data: { name?: string; firstName?: string; lastName?: string; email: string; password: string; role: string }) => Promise<void>
   logout: (showMessage?: boolean) => void
   checkAuth: () => Promise<void>
   
-  // Other Actions
+  // SmartRoute Actions
   setCurrentDeliveryPlan: (plan: DeliveryPlan | null) => void
   addRoute: (route: Route) => void
+  updateOptimizationWeights: (weights: { emissionsWeight?: number; timeWeight?: number; costWeight?: number }) => void
+  
+  // Stock2Door Actions
+  setProducts: (products: Product[]) => void
+  setWarehouses: (warehouses: Warehouse[]) => void
+  setOperations: (operations: Operation[]) => void
+  setLowStockItems: (items: Product[]) => void
+  addProduct: (product: Product) => void
+  updateProduct: (id: string, product: Partial<Product>) => void
+  deleteProduct: (id: string) => void
+  
+  // Common Actions
   setLoading: (loading: boolean) => void
   addNotification: (notification: Omit<AppState['notifications'][0], 'id' | 'timestamp'>) => void
   removeNotification: (id: string) => void
   clearNotifications: () => void
-  
-  // Optimization Actions
-  updateOptimizationWeights: (weights: { emissionsWeight?: number; timeWeight?: number; costWeight?: number }) => void
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      // Initial State
       user: null,
       token: null,
       isAuthenticated: false,
+      isLoading: false,
       currentDeliveryPlan: null,
       routes: [],
-      isLoading: false,
-      notifications: [],
       optimizationWeights: {
         emissionsWeight: 40,
         timeWeight: 35,
         costWeight: 25
       },
+      products: [],
+      warehouses: [],
+      operations: [],
+      lowStockItems: [],
+      notifications: [],
       
       // Auth Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -114,9 +181,10 @@ export const useAppStore = create<AppState>()(
           
           apiClient.setToken(token)
           
+          const userName = user.name || user.firstName || 'User'
           get().addNotification({
             type: 'success',
-            message: `Welcome back, ${user.name}!`
+            message: `Welcome back, ${userName}!`
           })
         } catch (error: any) {
           set({ isLoading: false })
@@ -129,8 +197,8 @@ export const useAppStore = create<AppState>()(
             errorMessage = 'Account not found. Please check your email or register first.'
           } else if (error.response?.status === 429) {
             errorMessage = 'Too many login attempts. Please try again later.'
-          } else if (error.response?.data?.error) {
-            errorMessage = error.response.data.error
+          } else if (error.response?.data?.error || error.response?.data?.message) {
+            errorMessage = error.response.data.error || error.response.data.message
           } else if (error.code === 'NETWORK_ERROR' || !error.response) {
             errorMessage = 'Network error. Please check your connection and try again.'
           }
@@ -143,10 +211,10 @@ export const useAppStore = create<AppState>()(
         }
       },
       
-      register: async (name: string, email: string, password: string, role: string) => {
+      register: async (data) => {
         try {
           set({ isLoading: true })
-          const response = await apiClient.register({ name, email, password, role })
+          const response = await apiClient.register(data)
           
           const { user, token } = response
           set({ 
@@ -158,9 +226,10 @@ export const useAppStore = create<AppState>()(
           
           apiClient.setToken(token)
           
+          const userName = user.name || user.firstName || 'User'
           get().addNotification({
             type: 'success',
-            message: `Welcome to SmartRoute, ${user.name}!`
+            message: `Welcome to Stock2Door, ${userName}!`
           })
         } catch (error: any) {
           set({ isLoading: false })
@@ -171,11 +240,10 @@ export const useAppStore = create<AppState>()(
             errorMessage = 'An account with this email already exists. Please login instead.'
           } else if (error.response?.status === 400) {
             if (error.response.data?.details) {
-              // Validation errors
               const validationErrors = error.response.data.details.map((err: any) => err.msg).join(', ')
               errorMessage = `Please fix the following: ${validationErrors}`
             } else {
-              errorMessage = error.response.data?.error || 'Invalid registration data.'
+              errorMessage = error.response.data?.error || error.response.data?.message || 'Invalid registration data.'
             }
           } else if (error.code === 'NETWORK_ERROR' || !error.response) {
             errorMessage = 'Network error. Please check your connection and try again.'
@@ -196,7 +264,11 @@ export const useAppStore = create<AppState>()(
           token: null, 
           isAuthenticated: false,
           currentDeliveryPlan: null,
-          routes: []
+          routes: [],
+          products: [],
+          warehouses: [],
+          operations: [],
+          lowStockItems: []
         })
         if (showMessage) {
           get().addNotification({
@@ -214,14 +286,31 @@ export const useAppStore = create<AppState>()(
           const response = await apiClient.getMe()
           set({ user: response.user as User, isAuthenticated: true })
         } catch (error) {
-          // Token is invalid, clear auth state silently (no success message)
           get().logout(false)
         }
       },
       
-      // Other Actions
+      // SmartRoute Actions
       setCurrentDeliveryPlan: (plan) => set({ currentDeliveryPlan: plan }),
       addRoute: (route) => set((state) => ({ routes: [...state.routes, route] })),
+      updateOptimizationWeights: (weights) => set((state) => ({
+        optimizationWeights: { ...state.optimizationWeights, ...weights }
+      })),
+      
+      // Stock2Door Actions
+      setProducts: (products) => set({ products }),
+      setWarehouses: (warehouses) => set({ warehouses }),
+      setOperations: (operations) => set({ operations }),
+      setLowStockItems: (items) => set({ lowStockItems: items }),
+      addProduct: (product) => set((state) => ({ products: [product, ...state.products] })),
+      updateProduct: (id, product) => set((state) => ({
+        products: state.products.map(p => p._id === id ? { ...p, ...product } : p)
+      })),
+      deleteProduct: (id) => set((state) => ({
+        products: state.products.filter(p => p._id !== id)
+      })),
+      
+      // Common Actions
       setLoading: (loading) => set({ isLoading: loading }),
       addNotification: (notification) => {
         const id = Date.now().toString() + Math.random().toString(36).substr(2, 9)
@@ -237,14 +326,9 @@ export const useAppStore = create<AppState>()(
         notifications: state.notifications.filter(n => n.id !== id)
       })),
       clearNotifications: () => set({ notifications: [] }),
-      
-      // Optimization Actions
-      updateOptimizationWeights: (weights) => set((state) => ({
-        optimizationWeights: { ...state.optimizationWeights, ...weights }
-      }))
     }),
     {
-      name: 'smartroute-auth',
+      name: 'stock2door-storage',
       partialize: (state) => ({ 
         user: state.user, 
         token: state.token, 
@@ -252,7 +336,6 @@ export const useAppStore = create<AppState>()(
         optimizationWeights: state.optimizationWeights
       }),
       onRehydrateStorage: () => (state) => {
-        // Restore token to API client when store is hydrated
         if (state?.token) {
           apiClient.setToken(state.token)
         }

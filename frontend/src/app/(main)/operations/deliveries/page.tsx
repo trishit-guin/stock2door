@@ -1,0 +1,252 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Download, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useState } from "react";
+
+export default function DeliveriesPage() {
+    const router = useRouter();
+    const [deliveries, setDeliveries] = useState<any[]>([]);
+    const [filteredDeliveries, setFilteredDeliveries] = useState<any[]>([]);
+    const [warehouses, setWarehouses] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [warehouseFilter, setWarehouseFilter] = useState("all");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+
+    useEffect(() => {
+        async function fetchDeliveries() {
+            try {
+                const [deliveriesRes, warehousesRes] = await Promise.all([
+                    fetch("/api/moves?type=delivery"),
+                    fetch("/api/warehouses")
+                ]);
+                
+                if (deliveriesRes.ok) {
+                    const data = await deliveriesRes.json();
+                    setDeliveries(data);
+                    setFilteredDeliveries(data);
+                }
+                
+                if (warehousesRes.ok) {
+                    const whData = await warehousesRes.json();
+                    setWarehouses(whData);
+                }
+            } catch (error) {
+                console.error("Failed to fetch deliveries", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchDeliveries();
+    }, []);
+
+    useEffect(() => {
+        let filtered = deliveries;
+
+        if (searchQuery) {
+            filtered = filtered.filter(
+                (d) =>
+                    d._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    d.partnerName?.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        if (statusFilter !== "all") {
+            filtered = filtered.filter((d) => d.status === statusFilter);
+        }
+
+        if (warehouseFilter !== "all") {
+            filtered = filtered.filter((d) => d.sourceLocation?._id === warehouseFilter);
+        }
+
+        if (dateFrom) {
+            filtered = filtered.filter((d) => new Date(d.date) >= new Date(dateFrom));
+        }
+
+        if (dateTo) {
+            const endDate = new Date(dateTo);
+            endDate.setHours(23, 59, 59);
+            filtered = filtered.filter((d) => new Date(d.date) <= endDate);
+        }
+
+        setFilteredDeliveries(filtered);
+    }, [searchQuery, statusFilter, warehouseFilter, dateFrom, dateTo, deliveries]);
+
+    if (isLoading) return <div>Loading deliveries...</div>;
+
+    const exportToCSV = () => {
+        if (filteredDeliveries.length === 0) {
+            alert("No deliveries to export");
+            return;
+        }
+
+        const headers = ["Reference", "Customer", "Warehouse", "Date", "Status", "Items Count"];
+        const rows = filteredDeliveries.map(d => [
+            `DEL-${d._id.slice(-6)}`,
+            d.partnerName || "N/A",
+            d.sourceLocation?.name || "N/A",
+            new Date(d.date).toLocaleDateString(),
+            d.status,
+            d.items?.length || 0
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `deliveries_${new Date().toISOString().split("T")[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Delivery Orders</h1>
+                    <p className="text-muted-foreground">Manage outgoing shipments to customers</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={exportToCSV}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
+                    <Link href="/operations/deliveries/create">
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Delivery
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white p-4 rounded-lg border">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input
+                        placeholder="Search by ID or customer..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                    />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    <Input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="w-40"
+                        placeholder="From date"
+                    />
+                    <Input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="w-40"
+                        placeholder="To date"
+                    />
+                    <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Warehouse" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Warehouses</SelectItem>
+                            {warehouses.map((wh) => (
+                                <SelectItem key={wh._id} value={wh._id}>
+                                    {wh.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="waiting">Waiting</SelectItem>
+                            <SelectItem value="ready">Ready</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                            <SelectItem value="canceled">Canceled</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <div className="rounded-md border bg-white">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Reference</TableHead>
+                            <TableHead>Source Document</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredDeliveries.map((delivery) => (
+                            <TableRow 
+                                key={delivery._id}
+                                className="cursor-pointer hover:bg-muted/50"
+                                onClick={() => router.push(`/operations/deliveries/${delivery._id}`)}
+                            >
+                                <TableCell className="font-medium">DEL-{delivery._id.slice(-6)}</TableCell>
+                                <TableCell>SO-{delivery._id.slice(-4)}</TableCell>
+                                <TableCell>{delivery.partnerName || "N/A"}</TableCell>
+                                <TableCell>{new Date(delivery.date).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                    <Badge
+                                        variant={
+                                            delivery.status === "done"
+                                                ? "default"
+                                                : delivery.status === "waiting"
+                                                    ? "secondary"
+                                                    : "outline"
+                                        }
+                                        className={
+                                            delivery.status === "done" ? "bg-green-600 hover:bg-green-700" : ""
+                                        }
+                                    >
+                                        {delivery.status.charAt(0).toUpperCase() + delivery.status.slice(1)}
+                                    </Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        {filteredDeliveries.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    No deliveries found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+    );
+}

@@ -12,7 +12,9 @@ export interface AuthResponse {
   user: {
     id: string
     email: string
-    name: string
+    name?: string
+    firstName?: string
+    lastName?: string
     role: string
   }
   token: string
@@ -24,7 +26,9 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  name: string
+  name?: string
+  firstName?: string
+  lastName?: string
   email: string
   password: string
   role: string

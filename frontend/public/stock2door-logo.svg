@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" width="600" height="300">
+  <!-- Package/Box (Blue) -->
+  <g id="package">
+    <path d="M 70 40 L 110 20 L 150 40 L 150 90 L 110 110 L 70 90 Z" fill="#2E7BB5" stroke="#1A5A8E" stroke-width="2"/>
+    <path d="M 70 40 L 110 60 L 150 40" fill="none" stroke="#1A5A8E" stroke-width="2"/>
+    <path d="M 110 60 L 110 110" fill="none" stroke="#1A5A8E" stroke-width="2"/>
+    <polyline points="85,50 110,37 135,50" fill="none" stroke="#FFF" stroke-width="2"/>
+    <polyline points="110,37 110,65" fill="none" stroke="#FFF" stroke-width="2"/>
+    <!-- Arrow on box -->
+    <path d="M 95 75 L 110 65 L 125 75 M 110 65 L 110 85" fill="none" stroke="#FFF" stroke-width="2"/>
+  </g>
+  
+  <!-- Circuit/Route connecting line (Blue gradient) -->
+  <path d="M 150 65 Q 180 65, 200 70" fill="none" stroke="#2E7BB5" stroke-width="4"/>
+  
+  <!-- AI/Smart element (Teal circle with nodes) -->
+  <g id="ai-element">
+    <circle cx="245" cy="80" r="35" fill="#4FA89A" stroke="#2E8B7E" stroke-width="3"/>
+    <circle cx="245" cy="80" r="15" fill="#2E8B7E"/>
+    <!-- Connection nodes -->
+    <circle cx="225" cy="65" r="4" fill="#FFF"/>
+    <circle cx="265" cy="65" r="4" fill="#FFF"/>
+    <circle cx="225" cy="95" r="4" fill="#FFF"/>
+    <circle cx="265" cy="95" r="4" fill="#FFF"/>
+    <line x1="245" y1="80" x2="225" y2="65" stroke="#FFF" stroke-width="2"/>
+    <line x1="245" y1="80" x2="265" y2="65" stroke="#FFF" stroke-width="2"/>
+    <line x1="245" y1="80" x2="225" y2="95" stroke="#FFF" stroke-width="2"/>
+    <line x1="245" y1="80" x2="265" y2="95" stroke="#FFF" stroke-width="2"/>
+  </g>
+  
+  <!-- Connecting line to house -->
+  <path d="M 280 75 L 330 70" fill="none" stroke="#76A854" stroke-width="4"/>
+  
+  <!-- Circuit/tech elements along line -->
+  <circle cx="300" cy="72" r="3" fill="#76A854"/>
+  <circle cx="315" cy="71" r="3" fill="#76A854"/>
+  
+  <!-- House/Delivery point (Green) -->
+  <g id="house">
+    <!-- Roof -->
+    <path d="M 340 70 L 380 40 L 420 70 L 410 70 L 410 110 L 350 110 L 350 70 Z" fill="#76A854" stroke="#5A8040" stroke-width="2"/>
+    <!-- House body -->
+    <rect x="350" y="70" width="60" height="40" fill="#8BC34A" stroke="#5A8040" stroke-width="2"/>
+    <!-- Door -->
+    <rect x="370" y="85" width="20" height="25" fill="#5A8040"/>
+    <circle cx="385" cy="97" r="2" fill="#FFF"/>
+    <!-- Window -->
+    <rect x="355" y="80" width="10" height="10" fill="#FFF" stroke="#5A8040" stroke-width="1"/>
+    <!-- Leaf on roof -->
+    <ellipse cx="405" cy="45" rx="8" ry="12" fill="#76A854" transform="rotate(-30 405 45)"/>
+    <line x1="405" y1="45" x2="405" y2="52" stroke="#5A8040" stroke-width="1"/>
+  </g>
+  
+  <!-- Text: Stock2Door -->
+  <text x="50" y="180" font-family="Arial, sans-serif" font-size="70" font-weight="bold" fill="#2E4A6B">
+    Stock<tspan fill="#76A854">2</tspan><tspan fill="#76A854">Door</tspan>
+  </text>
+  
+  <!-- Tagline -->
+  <text x="75" y="210" font-family="Arial, sans-serif" font-size="22" fill="#5A7A8E">
+    Smart, Green Logistics
+  </text>
+</svg>
