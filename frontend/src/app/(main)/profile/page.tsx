@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { User, Mail, Briefcase, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import api from "@/lib/api";
 
 export default function ProfilePage() {
     const [user, setUser] = useState<any>(null);
@@ -25,16 +26,13 @@ export default function ProfilePage() {
 
     async function fetchProfile() {
         try {
-            const res = await fetch("/api/user/profile");
-            if (res.ok) {
-                const data = await res.json();
-                setUser(data);
-                setFormData({
-                    firstName: data.firstName || "",
-                    lastName: data.lastName || "",
-                    email: data.email || "",
-                });
-            }
+            const user = await api.getMe();
+            setUser(user);
+            setFormData({
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                email: user.email || "",
+            });
         } catch (error) {
             console.error("Failed to fetch profile", error);
         } finally {
@@ -47,24 +45,15 @@ export default function ProfilePage() {
         setIsSaving(true);
 
         try {
-            const res = await fetch("/api/user/profile", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
-
-            if (res.ok) {
-                const updatedProfile = await res.json();
-                setUser(updatedProfile);
+            const response = await api.axiosInstance.put('/api/v1/auth/profile', formData);
+            if (response.data) {
+                setUser(response.data);
                 setIsEditing(false);
                 alert("Profile updated successfully!");
-            } else {
-                const error = await res.json();
-                alert(error.message || "Failed to update profile");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating profile:", error);
-            alert("Failed to update profile");
+            alert(error.response?.data?.message || "Failed to update profile");
         } finally {
             setIsSaving(false);
         }

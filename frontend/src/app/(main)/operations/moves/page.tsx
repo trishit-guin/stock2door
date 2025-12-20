@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 interface Move {
     _id: string;
@@ -28,10 +29,9 @@ export default function MoveHistoryPage() {
     useEffect(() => {
         async function fetchMoves() {
             try {
-                const res = await fetch("/api/moves");
-                if (res.ok) {
-                    const data = await res.json();
-                    setMoves(data);
+                const response = await api.axiosInstance.get('/api/v1/stock-movements');
+                if (response.data) {
+                    setMoves(response.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch moves:", error);

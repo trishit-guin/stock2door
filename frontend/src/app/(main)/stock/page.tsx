@@ -5,6 +5,7 @@ import { Package, AlertTriangle, TrendingUp, Warehouse as WarehouseIcon, Filter 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 
 interface StockLevel {
     warehouseId: {
@@ -53,10 +54,9 @@ export default function StockPage() {
 
     async function fetchWarehouses() {
         try {
-            const res = await fetch("/api/warehouses");
-            if (res.ok) {
-                const data = await res.json();
-                setWarehouses(data);
+            const response = await api.axiosInstance.get('/api/v1/warehouses');
+            if (response.data) {
+                setWarehouses(response.data);
             }
         } catch (error) {
             console.error("Error fetching warehouses:", error);
@@ -74,10 +74,9 @@ export default function StockPage() {
                 params.append("lowStock", "true");
             }
 
-            const res = await fetch(`/api/stock?${params}`);
-            if (res.ok) {
-                const data = await res.json();
-                setStockData(data);
+            const response = await api.axiosInstance.get(`/api/v1/stock?${params}`);
+            if (response.data) {
+                setStockData(response.data);
             }
         } catch (error) {
             console.error("Error fetching stock:", error);

@@ -13,35 +13,28 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function WarehousePage() {
     const router = useRouter();
     const [locations, setLocations] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAuthorized, setIsAuthorized] = useState(false);
+    const { userRole, isReadOnly } = useUserRole();
 
     useEffect(() => {
         async function fetchData() {
             try {
                 // Check authorization
-                const authRes = await fetch("/api/auth/me");
-                if (authRes.ok) {
-                    const authData = await authRes.json();
-                    if (authData.user.role !== "manager") {
-                        router.push("/dashboard");
-                        return;
-                    }
-                    setIsAuthorized(true);
-                } else {
-                    router.push("/login");
+                if (userRole !== "inventory_manager" && userRole !== "admin") {
+                    router.push("/dashboard");
                     return;
                 }
 
                 // Fetch warehouses
-                const res = await fetch("/api/warehouses");
-                if (res.ok) {
-                    const data = await res.json();
-                    setLocations(data);
+                const response = await api.axiosInstance.get('/api/v1/warehouses');
+                if (response.data) {
+                    setLocations(response.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch warehouses", error);
@@ -49,12 +42,14 @@ export default function WarehousePage() {
                 setIsLoading(false);
             }
         }
-        fetchData();
-    }, [router]);
+        if (userRole) {
+            fetchData();
+        }
+    }, [router, userRole]);
 
     if (isLoading) return <div>Loading warehouses...</div>;
-    
-    if (!isAuthorized) return null;
+
+    const canManage = userRole === "inventory_manager" && !isReadOnly;
 
     return (
         <div className="space-y-6">
@@ -63,12 +58,14 @@ export default function WarehousePage() {
                     <h1 className="text-3xl font-bold tracking-tight">Warehouse & Locations</h1>
                     <p className="text-muted-foreground">Manage warehouse locations and storage areas</p>
                 </div>
-                <Link href="/operations/warehouse/create">
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Location
-                    </Button>
-                </Link>
+                {canManage && (
+                    <Link href="/operations/warehouse/create">
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Location
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">

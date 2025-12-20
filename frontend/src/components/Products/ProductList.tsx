@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect, useState } from "react";
 import { Search, Edit } from "lucide-react";
 import Link from "next/link";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Product {
     _id: string;
@@ -35,24 +37,15 @@ export function ProductList() {
     const [searchQuery, setSearchQuery] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [stockFilter, setStockFilter] = useState("all");
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const { userRole, isReadOnly } = useUserRole();
 
     useEffect(() => {
         async function fetchData() {
             try {
-                // Fetch user role
-                const userRes = await fetch("/api/auth/me");
-                if (userRes.ok) {
-                    const userData = await userRes.json();
-                    setUserRole(userData.user.role);
-                }
-
-                // Fetch products
-                const res = await fetch("/api/products");
-                if (res.ok) {
-                    const data = await res.json();
-                    setProducts(data);
-                    setFilteredProducts(data);
+                const response = await api.axiosInstance.get('/api/v1/products');
+                if (response.data) {
+                    setProducts(response.data);
+                    setFilteredProducts(response.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch data", error);

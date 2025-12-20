@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function ReceiptsPage() {
     const router = useRouter();
@@ -28,24 +30,23 @@ export default function ReceiptsPage() {
     const [warehouseFilter, setWarehouseFilter] = useState("all");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    const { isReadOnly } = useUserRole();
 
     useEffect(() => {
         async function fetchReceipts() {
             try {
                 const [receiptsRes, warehousesRes] = await Promise.all([
-                    fetch("/api/moves?type=receipt"),
-                    fetch("/api/warehouses")
+                    api.axiosInstance.get('/api/v1/stock-movements?type=receipt'),
+                    api.axiosInstance.get('/api/v1/warehouses')
                 ]);
                 
-                if (receiptsRes.ok) {
-                    const data = await receiptsRes.json();
-                    setReceipts(data);
-                    setFilteredReceipts(data);
+                if (receiptsRes.data) {
+                    setReceipts(receiptsRes.data);
+                    setFilteredReceipts(receiptsRes.data);
                 }
                 
-                if (warehousesRes.ok) {
-                    const whData = await warehousesRes.json();
-                    setWarehouses(whData);
+                if (warehousesRes.data) {
+                    setWarehouses(warehousesRes.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch receipts", error);
@@ -90,21 +91,13 @@ export default function ReceiptsPage() {
 
     async function validateReceipt(id: string) {
         try {
-            const res = await fetch("/api/moves", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, status: "done" }),
-            });
-            if (res.ok) {
-                // Refresh list
-                const updated = receipts.map(r => r._id === id ? { ...r, status: "done" } : r);
-                setReceipts(updated);
-            } else {
-                const err = await res.json();
-                alert(err.message || "Validation failed");
-            }
-        } catch (error) {
+            await api.axiosInstance.put(`/api/v1/stock-movements/${id}`, { status: "done" });
+            // Refresh list
+            const updated = receipts.map(r => r._id === id ? { ...r, status: "done" } : r);
+            setReceipts(updated);
+        } catch (error: any) {
             console.error(error);
+            alert(error.response?.data?.message || "Validation failed");
         }
     }
 
@@ -152,12 +145,14 @@ export default function ReceiptsPage() {
                         <Download className="mr-2 h-4 w-4" />
                         Export
                     </Button>
-                    <Link href="/operations/receipts/create">
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Receipt
-                        </Button>
-                    </Link>
+                    {!isReadOnly && (
+                        <Link href="/operations/receipts/create">
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create Receipt
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </div>
 

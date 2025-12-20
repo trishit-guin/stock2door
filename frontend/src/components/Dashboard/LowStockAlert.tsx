@@ -5,6 +5,7 @@ import { AlertTriangle, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import api from "@/lib/api";
 
 interface LowStockProduct {
     _id: string;
@@ -21,11 +22,10 @@ export function LowStockAlert() {
     useEffect(() => {
         async function fetchLowStockProducts() {
             try {
-                const res = await fetch("/api/products");
-                if (res.ok) {
-                    const data = await res.json();
+                const response = await api.axiosInstance.get('/api/v1/products');
+                if (response.data) {
                     // Filter products below reorder level
-                    const lowStock = data.filter((p: any) => p.totalStock < p.reorderLevel);
+                    const lowStock = response.data.filter((p: any) => p.totalStock < p.reorderLevel);
                     setProducts(lowStock.slice(0, 5)); // Show top 5
                 }
             } catch (error) {

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Caveat } from 'next/font/google'
 import './globals.css'
 
@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   description: 'Complete logistics platform combining intelligent route optimization with powerful inventory management for seamless warehouse-to-door operations',
   keywords: 'logistics, inventory management, route optimization, warehouse management, delivery, stock control, supply chain',
   authors: [{ name: 'Stock2Door Team' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

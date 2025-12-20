@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import api from "@/lib/api";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -22,27 +23,38 @@ export default function LoginPage() {
         const password = formData.get("password");
 
         try {
-            const res = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+            const response = await api.login({
+                email: email as string,
+                password: password as string
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                // Redirect based on user role
-                if (data.user?.role === "staff") {
-                    router.push("/staff-dashboard");
-                } else {
-                    router.push("/dashboard");
-                }
+            // Token is automatically saved by api client
+            const user = response.user || response.data?.user;
+            
+            // Success message with styling
+            console.log(
+                '%c🎉 Login Successful!',
+                'color: #10b981; font-size: 16px; font-weight: bold; padding: 8px; background: #ecfdf5; border-radius: 4px;'
+            );
+            console.log(
+                `%c👤 Welcome, ${user?.firstName || user?.username || 'User'}!`,
+                'color: #3b82f6; font-size: 14px; padding: 4px;'
+            );
+            console.log(
+                `%c🎭 Role: ${user?.role?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}`,
+                'color: #8b5cf6; font-size: 14px; padding: 4px;'
+            );
+            
+            // Redirect based on user role
+            if (user?.role === "warehouse_staff") {
+                router.push("/staff-dashboard");
             } else {
-                const data = await res.json();
-                alert(data.message || "Login failed");
+                router.push("/dashboard");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("An error occurred");
+            const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
+            alert(errorMessage);
         } finally {
             setIsLoading(false);
         }

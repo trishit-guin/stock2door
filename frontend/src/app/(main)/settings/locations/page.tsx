@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Chip } from "@/components/ui/chip";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Location {
     _id: string;
@@ -36,6 +38,7 @@ export default function LocationsPage() {
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+    const { userRole, isReadOnly } = useUserRole();
 
     useEffect(() => {
         fetchData();
@@ -44,18 +47,16 @@ export default function LocationsPage() {
     async function fetchData() {
         try {
             const [locationsRes, warehousesRes] = await Promise.all([
-                fetch("/api/locations"),
-                fetch("/api/warehouses")
+                api.axiosInstance.get('/api/v1/warehouses'),
+                api.axiosInstance.get('/api/v1/warehouses')
             ]);
 
-            if (locationsRes.ok) {
-                const data = await locationsRes.json();
-                setLocations(data);
+            if (locationsRes.data) {
+                setLocations(locationsRes.data);
             }
 
-            if (warehousesRes.ok) {
-                const data = await warehousesRes.json();
-                setWarehouses(data);
+            if (warehousesRes.data) {
+                setWarehouses(warehousesRes.data);
             }
         } catch (error) {
             console.error("Failed to fetch data:", error);

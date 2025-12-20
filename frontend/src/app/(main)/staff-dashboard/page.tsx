@@ -5,6 +5,7 @@ import { QuickActionCard } from "@/components/Dashboard/QuickActionCard";
 import { MyOperations } from "@/components/Dashboard/MyOperations";
 import { StatsCard } from "@/components/Dashboard/StatsCard";
 import { Package, AlertTriangle, ClipboardList, CheckCircle2, Truck, ArrowRightLeft, Settings, PackagePlus } from "lucide-react";
+import api from "@/lib/api";
 
 interface StaffStats {
     totalProducts: number;
@@ -23,24 +24,23 @@ export default function StaffDashboard() {
         async function fetchData() {
             try {
                 // Fetch user info
-                const userRes = await fetch("/api/auth/me");
-                if (userRes.ok) {
-                    const userData = await userRes.json();
-                    const role = userData.user.role;
+                const userData = await api.getMe();
+                if (userData) {
+                    const role = userData.user?.role || userData.data?.role;
                     setUserRole(role);
-                    setUserName(userData.user.firstName || userData.user.email?.split('@')[0] || "there");
+                    setUserName(userData.user?.firstName || userData.data?.firstName || userData.user?.email?.split('@')[0] || "there");
                     
-                    // Redirect managers to their dashboard
-                    if (role === "manager") {
+                    // Redirect non-warehouse-staff to main dashboard
+                    if (role !== "warehouse_staff") {
                         window.location.href = "/dashboard";
                         return;
                     }
                 }
 
                 // Fetch stats
-                const statsRes = await fetch("/api/dashboard/stats");
-                if (statsRes.ok) {
-                    const data = await statsRes.json();
+                const statsData = await api.getDashboardStats();
+                if (statsData) {
+                    const data = statsData.data || statsData;
                     setStats({
                         totalProducts: data.totalProducts || 0,
                         lowStockItems: data.lowStockItems || 0,
@@ -56,21 +56,22 @@ export default function StaffDashboard() {
         }
         fetchData();
         
-        // Auto-refresh stats every 30 seconds
-        const interval = setInterval(() => {
-            fetch("/api/dashboard/stats")
-                .then(res => res.ok ? res.json() : null)
-                .then(data => {
-                    if (data) {
-                        setStats({
-                            totalProducts: data.totalProducts || 0,
-                            lowStockItems: data.lowStockItems || 0,
-                            myPendingOperations: data.pendingMoves || 0,
-                            todayCompleted: data.todayCompleted || 0
-                        });
-                    }
-                })
-                .catch(console.error);
+        // Auto-refresh stats every 30 seconds for real-time updates
+        const interval = setInterval(async () => {
+            try {
+                const statsData = await api.getDashboardStats();
+                if (statsData) {
+                    const data = statsData.data || statsData;
+                    setStats({
+                        totalProducts: data.totalProducts || 0,
+                        lowStockItems: data.lowStockItems || 0,
+                        myPendingOperations: data.pendingMoves || 0,
+                        todayCompleted: data.todayCompleted || 0
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to refresh stats:", error);
+            }
         }, 30000);
         
         return () => clearInterval(interval);

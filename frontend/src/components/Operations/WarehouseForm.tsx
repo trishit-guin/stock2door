@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 interface Location {
     _id: string;
@@ -28,10 +29,9 @@ export function WarehouseForm() {
 
     async function fetchLocations() {
         try {
-            const res = await fetch("/api/locations");
-            if (res.ok) {
-                const data = await res.json();
-                setLocations(data);
+            const response = await api.axiosInstance.get('/api/v1/warehouses');
+            if (response.data) {
+                setLocations(response.data);
             }
         } catch (error) {
             console.error("Failed to fetch locations:", error);
@@ -58,22 +58,12 @@ export function WarehouseForm() {
         };
 
         try {
-            const res = await fetch("/api/warehouses", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-
-            if (res.ok) {
-                router.push("/operations/warehouse");
-                router.refresh();
-            } else {
-                const error = await res.json();
-                alert(error.message || "Failed to create warehouse");
-            }
-        } catch (error) {
+            await api.axiosInstance.post('/api/v1/warehouses', payload);
+            router.push("/operations/warehouse");
+            router.refresh();
+        } catch (error: any) {
             console.error(error);
-            alert("An error occurred");
+            alert(error.response?.data?.message || "Failed to create warehouse");
         } finally {
             setIsLoading(false);
         }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { History, User, Package, MapPin, TrendingUp, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import api from "@/lib/api";
 
 interface Activity {
     _id: string;
@@ -21,10 +22,9 @@ export function ActivityLog() {
     useEffect(() => {
         async function fetchActivities() {
             try {
-                const res = await fetch("/api/activities");
-                if (res.ok) {
-                    const data = await res.json();
-                    setActivities(data.slice(0, 10)); // Show last 10
+                const response = await api.axiosInstance.get('/api/v1/dashboard/activity');
+                if (response.data) {
+                    setActivities(response.data.slice(0, 10)); // Show last 10
                 }
             } catch (error) {
                 console.error("Failed to fetch activities", error);
@@ -37,9 +37,9 @@ export function ActivityLog() {
 
         async function fetchFallbackActivities() {
             try {
-                const res = await fetch("/api/moves?limit=10");
-                if (res.ok) {
-                    const moves = await res.json();
+                const response = await api.axiosInstance.get('/api/v1/stock-movements?limit=10');
+                if (response.data) {
+                    const moves = response.data;
                     const formatted = moves.map((move: any) => ({
                         _id: move._id,
                         type: move.type,

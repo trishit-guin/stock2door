@@ -1,37 +1,21 @@
 "use client";
 
 import { WarehouseForm } from "@/components/Operations/WarehouseForm";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function CreateWarehousePage() {
     const router = useRouter();
-    const [isAuthorized, setIsAuthorized] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const { userRole, isReadOnly, isLoading } = useUserRole();
 
     useEffect(() => {
-        async function checkAuth() {
-            try {
-                const res = await fetch("/api/auth/me");
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.user.role === "manager") {
-                        setIsAuthorized(true);
-                    } else {
-                        router.push("/operations/warehouse");
-                    }
-                } else {
-                    router.push("/login");
-                }
-            } catch (error) {
-                console.error("Auth check failed:", error);
-                router.push("/login");
-            } finally {
-                setIsLoading(false);
+        if (!isLoading) {
+            if (userRole !== "inventory_manager" || isReadOnly) {
+                router.push("/operations/warehouse");
             }
         }
-        checkAuth();
-    }, [router]);
+    }, [userRole, isReadOnly, isLoading, router]);
 
     if (isLoading) {
         return (

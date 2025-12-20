@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, MapPinIcon } from "lucide-react";
+import { RouteOptimizer } from "@/components/RouteOptimizer";
+import api from "@/lib/api";
 
 export function TransferForm() {
     const router = useRouter();
@@ -17,23 +19,27 @@ export function TransferForm() {
     const [sourceWarehouse, setSourceWarehouse] = useState("");
     const [destinationWarehouse, setDestinationWarehouse] = useState("");
     const [date, setDate] = useState("");
+    const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+    const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
 
     // Fetch products and warehouses on mount
     useEffect(() => {
         async function fetchData() {
-            const [productsRes, warehousesRes] = await Promise.all([
-                fetch("/api/products"),
-                fetch("/api/warehouses")
-            ]);
+            try {
+                const [productsRes, warehousesRes] = await Promise.all([
+                    api.axiosInstance.get('/api/v1/products'),
+                    api.axiosInstance.get('/api/v1/warehouses')
+                ]);
 
-            if (productsRes.ok) {
-                const data = await productsRes.json();
-                setProducts(data);
-            }
+                if (productsRes.data) {
+                    setProducts(productsRes.data);
+                }
 
-            if (warehousesRes.ok) {
-                const data = await warehousesRes.json();
-                setWarehouses(data);
+                if (warehousesRes.data) {
+                    setWarehouses(warehousesRes.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch data", error);
             }
         }
         fetchData();
@@ -70,11 +76,15 @@ export function TransferForm() {
         };
 
         try {
-            const res = await fetch("/api/moves", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+            await api.axiosInstance.post('/api/v1/stock-movements', payload);
+            router.push("/operations/transfers");
+            router.refresh();
+        } catch (error: any) {
+            console.error(error);
+            alert(error.response?.data?.message || "Failed to create transfer");
+        } finally {
+            setIsLoading(false);
+        }
 
             if (res.ok) {
                 router.push("/operations/transfers");
@@ -190,6 +200,53 @@ export function TransferForm() {
                     ))}
                 </div>
             </div>
+
+            {/* Route Optimization Section */}
+            {sourceWarehouse && destinationWarehouse && (
+                <div className="space-y-4 border-t pt-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold">Route Optimization</h3>
+                            <p className="text-sm text-gray-500">
+                                Optimize your transfer route for cost, time, and emissions
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowRouteOptimizer(!showRouteOptimizer)}
+                        >
+                            <MapPinIcon className="mr-2 h-4 w-4" />
+                            {showRouteOptimizer ? 'Hide' : 'Show'} Route Optimizer
+                        </Button>
+                    </div>
+
+                    {showRouteOptimizer && (
+                        <div className="bg-gray-50 rounded-lg p-6 border">
+                            <RouteOptimizer
+                                sourceWarehouseId={sourceWarehouse}
+                                destinationWarehouseId={destinationWarehouse}
+                                productId={lines[0]?.productId}
+                                quantity={lines.reduce((sum, line) => sum + Number(line.quantity), 0)}
+                                onRouteSelected={(route) => {
+                                    setOptimizedRoute(route)
+                                    console.log('Selected route:', route)
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {optimizedRoute && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm font-medium text-green-800">
+                                ✓ Route optimized! Estimated cost: ₹{optimizedRoute.cost?.value?.toFixed(2)} | 
+                                CO₂: {optimizedRoute.emissions?.value?.toFixed(2)} kg | 
+                                Duration: {optimizedRoute.duration?.adjusted?.toFixed(1)} hrs
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>

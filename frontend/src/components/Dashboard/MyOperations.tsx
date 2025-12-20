@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ClipboardList, Truck, ArrowRightLeft, Settings } from "lucide-react";
 import Link from "next/link";
+import api from "@/lib/api";
 
 interface Operation {
     _id: string;
@@ -21,10 +22,9 @@ export function MyOperations() {
     useEffect(() => {
         async function fetchOperations() {
             try {
-                const res = await fetch("/api/operations/my-operations");
-                if (res.ok) {
-                    const data = await res.json();
-                    setOperations(data.operations || []);
+                const response = await api.axiosInstance.get('/api/v1/stock-movements?limit=10');
+                if (response.data) {
+                    setOperations(response.data || []);
                 }
             } catch (error) {
                 console.error("Failed to fetch operations:", error);

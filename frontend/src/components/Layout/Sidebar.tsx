@@ -19,13 +19,16 @@ import {
     BarChart3,
     Route,
     Navigation,
-    Leaf
+    Leaf,
+    Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { GlobalSearch } from "./GlobalSearch";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
+
+type UserRole = 'admin' | 'inventory_manager' | 'logistics_manager' | 'warehouse_staff' | 'fleet_operator' | 'environment_manager' | 'sustainability_manager' | 'auditor';
 
 interface NavigationItem {
     name: string;
@@ -38,11 +41,9 @@ interface NavigationItem {
         name: string; 
         href: string; 
         icon: any; 
-        managerOnly?: boolean;
-        staffOnly?: boolean;
+        roles?: UserRole[];
     }>;
-    managerOnly?: boolean;
-    staffOnly?: boolean;
+    roles?: UserRole[];
 }
 
 const navigation: NavigationItem[] = [
@@ -52,7 +53,8 @@ const navigation: NavigationItem[] = [
         icon: LayoutDashboard,
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
-        activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20"
+        activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
+        roles: ['admin', 'inventory_manager', 'logistics_manager', 'warehouse_staff']
     },
     {
         name: "Products",
@@ -60,7 +62,8 @@ const navigation: NavigationItem[] = [
         icon: Package,
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
-        activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20"
+        activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
+        roles: ['admin', 'inventory_manager', 'warehouse_staff']
     },
     {
         name: "Stock Overview",
@@ -68,57 +71,38 @@ const navigation: NavigationItem[] = [
         icon: ClipboardList,
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
-        activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20"
+        activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
+        roles: ['admin', 'inventory_manager', 'warehouse_staff']
     },
     {
-        name: "Operations",
+        name: "Warehouse Operations",
         icon: ArrowRightLeft,
         color: "text-green-600",
         bgColor: "bg-green-50",
         activeColor: "bg-green-50 text-green-600 border-green-200",
+        roles: ['admin', 'warehouse_staff'],
         children: [
-            { name: "Receipts", href: "/operations/receipts", icon: ClipboardList },
-            { name: "Deliveries", href: "/operations/deliveries", icon: Truck },
-            { name: "Transfers", href: "/operations/transfers", icon: ArrowRightLeft },
-            { name: "Adjustments", href: "/operations/adjustments", icon: Settings },
-            { name: "Move History", href: "/operations/moves", icon: History },
+            { name: "Receipts", href: "/operations/receipts", icon: ClipboardList, roles: ['admin', 'warehouse_staff'] },
+            { name: "Invoice Generation", href: "/operations/invoices", icon: ClipboardList, roles: ['admin', 'warehouse_staff'] },
+            { name: "Internal Transfers", href: "/operations/transfers", icon: ArrowRightLeft, roles: ['admin', 'warehouse_staff'] },
+            { name: "Adjustments", href: "/operations/adjustments", icon: Settings, roles: ['admin', 'warehouse_staff'] },
+            { name: "Move History", href: "/operations/moves", icon: History, roles: ['admin', 'warehouse_staff'] },
         ],
     },
     {
-        name: "Route Optimizer",
-        href: "/optimizer",
-        icon: Route,
-        color: "text-purple-600",
-        bgColor: "bg-purple-50",
-        activeColor: "bg-purple-50 text-purple-600 border-purple-200",
-        managerOnly: true
-    },
-    {
-        name: "Fleet Management",
-        href: "/fleet",
+        name: "Logistics Operations",
         icon: Truck,
         color: "text-orange-600",
         bgColor: "bg-orange-50",
         activeColor: "bg-orange-50 text-orange-600 border-orange-200",
-        managerOnly: true
-    },
-    {
-        name: "Analytics",
-        href: "/analytics",
-        icon: BarChart3,
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-        activeColor: "bg-blue-50 text-blue-600 border-blue-200",
-        managerOnly: true
-    },
-    {
-        name: "Sustainability",
-        href: "/sustainability",
-        icon: Leaf,
-        color: "text-green-700",
-        bgColor: "bg-green-50",
-        activeColor: "bg-green-50 text-green-700 border-green-200",
-        managerOnly: true
+        roles: ['admin', 'logistics_manager'],
+        children: [
+            { name: "Deliveries", href: "/operations/deliveries", icon: Truck, roles: ['admin', 'logistics_manager'] },
+            { name: "Smart Route", href: "/routes", icon: Route, roles: ['admin', 'logistics_manager'] },
+            { name: "Route Optimization", href: "/routes/optimize", icon: Navigation, roles: ['admin', 'logistics_manager'] },
+            { name: "Fleet Management", href: "/fleet", icon: Truck, roles: ['admin', 'logistics_manager'] },
+            { name: "Move History", href: "/operations/moves", icon: History, roles: ['admin', 'logistics_manager'] },
+        ],
     },
     {
         name: "Warehouses",
@@ -127,7 +111,16 @@ const navigation: NavigationItem[] = [
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
         activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
-        managerOnly: true
+        roles: ['admin', 'inventory_manager']
+    },
+    {
+        name: "Analytics",
+        href: "/analytics",
+        icon: BarChart3,
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        activeColor: "bg-blue-50 text-blue-600 border-blue-200",
+        roles: ['admin', 'inventory_manager']
     },
     {
         name: "Reports",
@@ -136,7 +129,16 @@ const navigation: NavigationItem[] = [
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
         activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
-        managerOnly: true
+        roles: ['admin', 'inventory_manager', 'logistics_manager']
+    },
+    {
+        name: "User Management",
+        href: "/users",
+        icon: Users,
+        color: "text-slate-600",
+        bgColor: "bg-slate-100",
+        activeColor: "bg-slate-100 text-slate-600 border-slate-200",
+        roles: ['admin']
     },
     {
         name: "Settings",
@@ -145,7 +147,7 @@ const navigation: NavigationItem[] = [
         color: "text-slate-600",
         bgColor: "bg-slate-100",
         activeColor: "bg-slate-100 text-slate-600 border-slate-200",
-        managerOnly: true
+        roles: ['admin', 'logistics_manager']
     },
 ];
 
@@ -155,19 +157,35 @@ interface SidebarProps {
 
 export function Sidebar({ onProfileClick }: SidebarProps = {}) {
     const pathname = usePathname();
-    const [operationsOpen, setOperationsOpen] = useState(true);
-    const [userRole, setUserRole] = useState<"manager" | "staff" | null>(null);
+    const [warehouseOpsOpen, setWarehouseOpsOpen] = useState(true);
+    const [logisticsOpsOpen, setLogisticsOpsOpen] = useState(true);
+    const [userRole, setUserRole] = useState<UserRole | null>(null);
 
     useEffect(() => {
         async function fetchUserRole() {
             try {
-                const res = await fetch("/api/auth/me");
+                // Get token from localStorage
+                const token = localStorage.getItem('smartroute_token');
+                if (!token) {
+                    setUserRole('warehouse_staff' as UserRole); // Default fallback
+                    return;
+                }
+
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 if (res.ok) {
                     const data = await res.json();
-                    setUserRole(data.user.role);
+                    const role = data.user?.role || data.data?.role;
+                    setUserRole(role);
+                } else {
+                    setUserRole('warehouse_staff' as UserRole); // Default fallback
                 }
             } catch (error) {
                 console.error("Failed to fetch user role:", error);
+                setUserRole('warehouse_staff' as UserRole); // Default fallback
             }
         }
         fetchUserRole();
@@ -175,35 +193,37 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
 
     // Filter navigation based on role
     const filteredNavigation = navigation.filter(item => {
-        if (item.managerOnly && userRole === "staff") {
-            return false;
-        }
-        if (item.staffOnly && userRole === "manager") {
-            return false;
-        }
-        return true;
+        if (!userRole) return false; // Don't show anything if role is not determined
+        if (!item.roles) return true;
+        return item.roles.includes(userRole);
     }).map(item => {
-        // Update Home link based on role
-        if (item.name === "Home") {
-            return { 
-                ...item, 
-                href: userRole === "staff" ? "/staff-dashboard" : "/dashboard" 
-            };
-        }
         // Filter children based on role
-        if (item.children) {
+        if (item.children && userRole) {
             return {
                 ...item,
                 children: item.children.filter(child => {
-                    if (child.managerOnly && userRole === "staff") {
-                        return false;
-                    }
-                    return true;
+                    if (!child.roles) return true;
+                    return child.roles.includes(userRole);
                 })
             };
         }
         return item;
     });
+
+    const getRoleDisplayName = (role: UserRole | null): string => {
+        if (!role) return 'User';
+        const roleMap: Record<UserRole, string> = {
+            'admin': 'Admin',
+            'inventory_manager': 'Inventory Manager',
+            'logistics_manager': 'Logistics Manager',
+            'warehouse_staff': 'Warehouse Staff',
+            'fleet_operator': 'Fleet Operator',
+            'environment_manager': 'Environment Manager',
+            'sustainability_manager': 'Sustainability Manager',
+            'auditor': 'Auditor'
+        };
+        return roleMap[role] || 'User';
+    };
 
     return (
         <div className="flex h-screen w-72 flex-col bg-white text-slate-600">
@@ -221,17 +241,20 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
             <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
                 <nav className="space-y-2">
                     {filteredNavigation.map((item) => {
-                        // For Home navigation, check against both dashboard routes based on role
-                        const homeRoutes = ["/dashboard", "/staff-dashboard"];
-                        const isHomeActive = item.name === "Home" && homeRoutes.includes(pathname);
-                        const isActive = isHomeActive || pathname === item.href || (item.children && item.children.some(child => pathname === child.href));
+                        const isActive = pathname === item.href || (item.children && item.children.some(child => pathname === child.href));
 
                         return (
                             <div key={item.name}>
                                 {item.children ? (
                                     <div className="space-y-1">
                                         <button
-                                            onClick={() => setOperationsOpen(!operationsOpen)}
+                                            onClick={() => {
+                                                if (item.name === "Warehouse Operations") {
+                                                    setWarehouseOpsOpen(!warehouseOpsOpen);
+                                                } else if (item.name === "Logistics Operations") {
+                                                    setLogisticsOpsOpen(!logisticsOpsOpen);
+                                                }
+                                            }}
                                             className={cn(
                                                 "group flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
                                                 isActive
@@ -246,21 +269,21 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
                                                 <div className="flex flex-col items-start">
                                                     <span>{item.name}</span>
                                                     <span className="text-xs font-normal text-muted-foreground">
-                                                        {item.name === "Operations" ? "Stock operations" : "Management"}
+                                                        {item.name === "Warehouse Operations" ? "Stock operations" : "Delivery & routes"}
                                                     </span>
                                                 </div>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
                                                     "h-4 w-4 transition-transform duration-200",
-                                                    operationsOpen ? "rotate-180" : ""
+                                                    (item.name === "Warehouse Operations" ? warehouseOpsOpen : logisticsOpsOpen) ? "rotate-180" : ""
                                                 )}
                                             />
                                         </button>
 
                                         <div className={cn(
                                             "overflow-hidden transition-all duration-300 ease-in-out",
-                                            operationsOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                                            (item.name === "Warehouse Operations" ? warehouseOpsOpen : logisticsOpsOpen) ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                                         )}>
                                             <div className="mt-2 space-y-1 pl-16 pr-2">
                                                 {item.children.map((child) => (
@@ -299,13 +322,11 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
                                                 {item.name === "Home" ? "Dashboard overview" :
                                                     item.name === "Products" ? "Manage inventory" :
                                                     item.name === "Stock Overview" ? "View all stock" :
-                                                    item.name === "Route Optimizer" ? "Optimize deliveries" :
-                                                    item.name === "Fleet Management" ? "Track vehicles" :
-                                                    item.name === "Analytics" ? "Insights & reports" :
-                                                    item.name === "Sustainability" ? "Emissions tracking" :
                                                     item.name === "Warehouses" ? "Location management" :
+                                                    item.name === "Analytics" ? "Insights & data" :
                                                     item.name === "Reports" ? "Generate reports" :
-                                                    item.name === "Settings" ? "Optimization settings" : ""}
+                                                    item.name === "User Management" ? "Manage users" :
+                                                    item.name === "Settings" ? "App settings" : ""}
                                             </span>
                                         </div>
                                     </Link>
@@ -328,7 +349,7 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
                     </div>
                     <div className="flex-1 min-w-0 text-left">
                         <p className="text-sm font-medium text-slate-900 truncate">My Profile</p>
-                        <p className="text-xs text-slate-500 truncate">{userRole === "manager" ? "Manager" : "Staff"}</p>
+                        <p className="text-xs text-slate-500 truncate">{getRoleDisplayName(userRole)}</p>
                     </div>
                 </Button>
             </div>

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, TrendingUp, Package, IndianRupee, BarChart3, Calendar } from "lucide-react";
+import api from "@/lib/api";
 
 export default function ReportsPage() {
     const [reportType, setReportType] = useState("value");
@@ -28,10 +29,9 @@ export default function ReportsPage() {
     useEffect(() => {
         async function fetchWarehouses() {
             try {
-                const res = await fetch("/api/warehouses");
-                if (res.ok) {
-                    const data = await res.json();
-                    setWarehouses(data);
+                const response = await api.axiosInstance.get('/api/v1/warehouses');
+                if (response.data) {
+                    setWarehouses(response.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch warehouses", error);
@@ -47,7 +47,7 @@ export default function ReportsPage() {
     async function generateReport() {
         setIsLoading(true);
         try {
-            let url = `/api/reports?type=${reportType}`;
+            let url = `/api/v1/reports?type=${reportType}`;
             if (selectedWarehouse !== "all") {
                 url += `&warehouse=${selectedWarehouse}`;
             }

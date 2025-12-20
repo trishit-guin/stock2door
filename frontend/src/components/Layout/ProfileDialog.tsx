@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
+import api from "@/lib/api";
 
 interface ProfileDialogProps {
     isOpen: boolean;
@@ -12,11 +13,13 @@ interface ProfileDialogProps {
 }
 
 interface UserProfile {
-    id: string;
+    _id: string;
+    username: string;
     firstName: string;
     lastName: string;
     email: string;
     role: string;
+    createdAt: string;
 }
 
 export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
@@ -29,11 +32,9 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
 
     // Password change state
     const [isChangingPassword, setIsChangingPassword] = useState(false);
-    const [otpSent, setOtpSent] = useState(false);
-    const [otp, setOtp] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [isSendingOTP, setIsSendingOTP] = useState(false);
     const [isChangingPwd, setIsChangingPwd] = useState(false);
 
     // Form state
@@ -52,18 +53,14 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
         setError(null);
 
         try {
-            const res = await fetch("/api/user/profile");
-            if (res.ok) {
-                const data = await res.json();
-                setProfile(data);
-                setFirstName(data.firstName);
-                setLastName(data.lastName);
-                setEmail(data.email);
-            } else {
-                setError("Failed to load profile");
-            }
-        } catch (err) {
-            setError("An error occurred");
+            const data = await api.getMe();
+            const userData = data.data || data;
+            setProfile(userData);
+            setFirstName(userData.firstName);
+            setLastName(userData.lastName);
+            setEmail(userData.email);
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Failed to load profile");
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -75,24 +72,30 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
 
         setIsSaving(true);
         setError(null);
+        setSuccess(null);
 
         try {
-            const res = await fetch("/api/user/profile", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ firstName, lastName, email }),
+            // Update profile using backend API
+            const response = await api.axiosInstance.put('/api/auth/profile', {
+                firstName,
+                lastName,
+                email
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                setProfile(data);
+            if (response.data) {
+                const updatedData = response.data.data || response.data;
+                setProfile(updatedData);
                 setIsEditing(false);
-            } else {
-                const data = await res.json();
-                setError(data.message || "Failed to update profile");
+                setSuccess("Profile updated successfully!");
+                
+                // Success message with styling
+                console.log(
+                    '%c✅ Profile Updated!',
+                    'color: #10b981; font-size: 14px; font-weight: bold; padding: 4px;'
+                );
             }
-        } catch (err) {
-            setError("An error occurred");
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Failed to update profile");
             console.error(err);
         } finally {
             setIsSaving(false);
@@ -107,39 +110,15 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
         }
         setIsEditing(false);
         setError(null);
-    }
-
-    async function handleSendOTP() {
-        setIsSendingOTP(true);
-        setError(null);
         setSuccess(null);
-
-        try {
-            const res = await fetch("/api/auth/send-otp", {
-                method: "POST",
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                setOtpSent(true);
-                // Show demo OTP in success message for easy testing
-                const otpMessage = data.demoOTP 
-                    ? `OTP sent to ${data.email}. Demo OTP: ${data.demoOTP}` 
-                    : `OTP sent to ${data.email}`;
-                setSuccess(otpMessage);
-            } else {
-                setError(data.message || "Failed to send OTP");
-            }
-        } catch (err) {
-            setError("An error occurred while sending OTP");
-            console.error(err);
-        } finally {
-            setIsSendingOTP(false);
-        }
     }
 
     async function handleChangePassword() {
+        if (!currentPassword) {
+            setError("Current password is required");
+            return;
+        }
+
         if (newPassword !== confirmPassword) {
             setError("Passwords do not match");
             return;
@@ -155,27 +134,28 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
         setSuccess(null);
 
         try {
-            const res = await fetch("/api/auth/change-password", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ otp, newPassword }),
+            const response = await api.axiosInstance.put('/api/auth/change-password', {
+                currentPassword,
+                newPassword
             });
 
-            const data = await res.json();
-
-            if (res.ok) {
+            if (response.data) {
                 setSuccess("Password changed successfully!");
+                
+                // Success message with styling
+                console.log(
+                    '%c🔐 Password Changed!',
+                    'color: #10b981; font-size: 14px; font-weight: bold; padding: 4px;'
+                );
+                
                 // Reset form
-                setOtp("");
+                setCurrentPassword("");
                 setNewPassword("");
                 setConfirmPassword("");
-                setOtpSent(false);
                 setIsChangingPassword(false);
-            } else {
-                setError(data.message || "Failed to change password");
             }
-        } catch (err) {
-            setError("An error occurred while changing password");
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Failed to change password");
             console.error(err);
         } finally {
             setIsChangingPwd(false);
@@ -184,8 +164,7 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
 
     function handleCancelPasswordChange() {
         setIsChangingPassword(false);
-        setOtpSent(false);
-        setOtp("");
+        setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setError(null);
@@ -243,89 +222,57 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
                                     <h3 className="text-2xl font-bold text-slate-900">Change Password</h3>
                                 </div>
 
-                                {!otpSent ? (
-                                    <div className="space-y-4">
-                                        <p className="text-muted-foreground">
-                                            We'll send a verification code to your email address to confirm your identity.
-                                        </p>
-                                        <div className="flex gap-3">
-                                            <Button
-                                                onClick={handleSendOTP}
-                                                disabled={isSendingOTP}
-                                                className="min-w-[140px]"
-                                            >
-                                                {isSendingOTP ? "Sending..." : "Send OTP"}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={handleCancelPasswordChange}
-                                            >
-                                                Cancel
-                                            </Button>
-                                        </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="currentPassword">Current Password</Label>
+                                        <Input
+                                            id="currentPassword"
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            placeholder="Enter current password"
+                                            className="h-11"
+                                        />
                                     </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="otp">Verification Code (OTP)</Label>
-                                            <Input
-                                                id="otp"
-                                                type="text"
-                                                value={otp}
-                                                onChange={(e) => setOtp(e.target.value)}
-                                                placeholder="Enter 6-digit code"
-                                                maxLength={6}
-                                                className="h-11"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="newPassword">New Password</Label>
-                                            <Input
-                                                id="newPassword"
-                                                type="password"
-                                                value={newPassword}
-                                                onChange={(e) => setNewPassword(e.target.value)}
-                                                placeholder="Minimum 6 characters"
-                                                className="h-11"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="confirmPassword">Confirm Password</Label>
-                                            <Input
-                                                id="confirmPassword"
-                                                type="password"
-                                                value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                                placeholder="Re-enter new password"
-                                                className="h-11"
-                                            />
-                                        </div>
-                                        <div className="flex gap-3 pt-4">
-                                            <Button
-                                                onClick={handleChangePassword}
-                                                disabled={isChangingPwd || !otp || !newPassword || !confirmPassword}
-                                                className="min-w-[140px]"
-                                            >
-                                                {isChangingPwd ? "Changing..." : "Change Password"}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={handleCancelPasswordChange}
-                                                disabled={isChangingPwd}
-                                            >
-                                                Cancel
-                                            </Button>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="newPassword">New Password</Label>
+                                        <Input
+                                            id="newPassword"
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="Minimum 6 characters"
+                                            className="h-11"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                                        <Input
+                                            id="confirmPassword"
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            placeholder="Re-enter new password"
+                                            className="h-11"
+                                        />
+                                    </div>
+                                    <div className="flex gap-3 pt-4">
                                         <Button
-                                            variant="link"
-                                            onClick={handleSendOTP}
-                                            disabled={isSendingOTP}
-                                            className="text-sm"
+                                            onClick={handleChangePassword}
+                                            disabled={isChangingPwd || !currentPassword || !newPassword || !confirmPassword}
+                                            className="min-w-[140px]"
                                         >
-                                            Resend OTP
+                                            {isChangingPwd ? "Changing..." : "Change Password"}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleCancelPasswordChange}
+                                            disabled={isChangingPwd}
+                                        >
+                                            Cancel
                                         </Button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         ) : (
                             <>
@@ -343,11 +290,14 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
                                             {profile.email}
                                         </p>
                                         <div className="mt-2 flex items-center gap-2">
-                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold ring-1 ring-inset font-display ${profile.role === 'manager'
+                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold ring-1 ring-inset font-display ${
+                                                profile.role === 'admin' 
+                                                    ? 'bg-purple-100 text-purple-700 ring-purple-200'
+                                                    : profile.role === 'logistics_manager' || profile.role === 'inventory_manager'
                                                     ? 'bg-primary/10 text-primary ring-primary/20'
                                                     : 'bg-secondary/10 text-secondary ring-secondary/20'
                                                 }`}>
-                                                {profile.role === 'manager' ? 'Manager' : 'Staff'}
+                                                {profile.role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                             </span>
                                         </div>
                                     </div>

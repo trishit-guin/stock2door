@@ -5,46 +5,40 @@ import { Button } from "@/components/ui/button";
 import { Download, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function ProductsPage() {
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const { userRole, isAdmin, isReadOnly, isLoading: roleLoading } = useUserRole();
     const [isLoading, setIsLoading] = useState(true);
     const [products, setProducts] = useState<any[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        async function fetchUserRole() {
+        async function fetchProducts() {
             try {
-                const [userRes, productsRes] = await Promise.all([
-                    fetch("/api/auth/me"),
-                    fetch("/api/products")
-                ]);
-                
-                if (userRes.ok) {
-                    const data = await userRes.json();
-                    setUserRole(data.user.role);
-                }
-                
-                if (productsRes.ok) {
-                    const prods = await productsRes.json();
-                    setProducts(prods);
+                const response = await api.axiosInstance.get('/api/v1/products');
+                if (response.data) {
+                    setProducts(response.data);
                 }
             } catch (error) {
-                console.error("Failed to fetch user role:", error);
+                console.error("Failed to fetch products:", error);
             } finally {
                 setIsLoading(false);
             }
         }
-        fetchUserRole();
+        fetchProducts();
     }, []);
 
-    if (isLoading) {
+    if (isLoading || roleLoading) {
         return (
             <div className="space-y-6">
                 <div className="h-20 bg-gray-100 rounded-lg animate-pulse" />
             </div>
         );
     }
+
+    const canManageProducts = userRole === "inventory_manager" && !isReadOnly;
 
     const exportToCSV = () => {
         if (products.length === 0) {
@@ -104,12 +98,8 @@ export default function ProductsPage() {
                 let successCount = 0;
                 for (const product of productsToImport) {
                     try {
-                        const res = await fetch("/api/products", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(product),
-                        });
-                        if (res.ok) successCount++;
+                        await api.axiosInstance.post('/api/v1/products', product);
+                        successCount++;
                     } catch (err) {
                         console.error("Failed to import:", product.name);
                     }
@@ -131,7 +121,7 @@ export default function ProductsPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Products</h1>
                     <p className="text-muted-foreground">
-                        {userRole === "manager" 
+                        {canManageProducts
                             ? "Manage your product catalog and stock levels." 
                             : "View product catalog and stock information."}
                     </p>
@@ -141,7 +131,7 @@ export default function ProductsPage() {
                         <Download className="mr-2 h-4 w-4" />
                         Export CSV
                     </Button>
-                    {userRole === "manager" && (
+                    {canManageProducts && (
                         <>
                             <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="mr-2 h-4 w-4" />

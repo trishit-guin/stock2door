@@ -8,6 +8,7 @@ import { MyOperations } from "@/components/Dashboard/MyOperations";
 import { LowStockAlert } from "@/components/Dashboard/LowStockAlert";
 import { ActivityLog } from "@/components/Dashboard/ActivityLog";
 import { Package, AlertTriangle, ClipboardList, Truck, Warehouse as WarehouseIcon, TrendingUp, Plus, PackagePlus } from "lucide-react";
+import api from "@/lib/api";
 
 interface DashboardStats {
     totalProducts: number;
@@ -23,37 +24,35 @@ export default function Dashboard() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [userRole, setUserRole] = useState<"manager" | "staff" | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
     const [userName, setUserName] = useState("");
 
     useEffect(() => {
         async function fetchData() {
             try {
                 // Fetch user info
-                const userRes = await fetch("/api/auth/me");
-                if (userRes.ok) {
-                    const userData = await userRes.json();
-                    const role = userData.user.role;
+                const userData = await api.getMe();
+                if (userData) {
+                    const role = userData.user?.role || userData.data?.role;
                     setUserRole(role);
-                    setUserName(userData.user.firstName || userData.user.email?.split('@')[0] || "there");
+                    setUserName(userData.user?.firstName || userData.data?.firstName || userData.user?.email?.split('@')[0] || "there");
                     
-                    // Redirect staff to their dashboard
-                    if (role === "staff") {
+                    // Redirect warehouse staff to their dashboard
+                    if (role === "warehouse_staff") {
                         window.location.href = "/staff-dashboard";
                         return;
                     }
                 }
 
-                // Fetch stats (only for managers)
-                const statsRes = await fetch("/api/dashboard/stats");
-                if (statsRes.ok) {
-                    const data = await statsRes.json();
-                    setStats(data);
+                // Fetch stats (only for managers/admin)
+                const statsData = await api.getDashboardStats();
+                if (statsData) {
+                    setStats(statsData.data || statsData);
                 } else {
                     setError("Failed to load dashboard statistics");
                 }
-            } catch (err) {
-                setError("An error occurred while loading data");
+            } catch (err: any) {
+                setError(err.response?.data?.message || "An error occurred while loading data");
                 console.error(err);
             } finally {
                 setIsLoading(false);
@@ -63,11 +62,15 @@ export default function Dashboard() {
         fetchData();
         
         // Auto-refresh stats every 30 seconds
-        const interval = setInterval(() => {
-            fetch("/api/dashboard/stats")
-                .then(res => res.ok ? res.json() : null)
-                .then(data => data && setStats(data))
-                .catch(console.error);
+        const interval = setInterval(async () => {
+            try {
+                const statsData = await api.getDashboardStats();
+                if (statsData) {
+                    setStats(statsData.data || statsData);
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }, 30000);
         
         return () => clearInterval(interval);
@@ -76,7 +79,7 @@ export default function Dashboard() {
     if (isLoading) {
         return (
             <div className="space-y-8">
-                <DashboardBanner userName={userName} />
+                <DashboardBanner userName={userName} userRole={userRole || undefined} />
                 <div className="grid gap-8 md:grid-cols-2">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />
@@ -89,7 +92,7 @@ export default function Dashboard() {
     if (error || !stats) {
         return (
             <div className="space-y-8">
-                <DashboardBanner userName={userName} />
+                <DashboardBanner userName={userName} userRole={userRole || undefined} />
                 <div className="p-8 bg-red-50 border border-red-200 rounded-xl">
                     <p className="text-red-600 font-medium">{error || "Failed to load dashboard"}</p>
                 </div>
@@ -99,7 +102,7 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-8">
-            <DashboardBanner userName={userName} />
+            <DashboardBanner userName={userName} userRole={userRole || undefined} />
 
             {/* KPI Cards */}
             <div className="grid gap-6 md:grid-cols-3">

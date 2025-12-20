@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function AdjustmentsPage() {
     const router = useRouter();
@@ -28,24 +30,23 @@ export default function AdjustmentsPage() {
     const [warehouseFilter, setWarehouseFilter] = useState("all");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    const { isReadOnly } = useUserRole();
 
     useEffect(() => {
         async function fetchAdjustments() {
             try {
                 const [adjustmentsRes, warehousesRes] = await Promise.all([
-                    fetch("/api/adjustments"),
-                    fetch("/api/warehouses")
+                    api.axiosInstance.get('/api/v1/stock-movements?type=adjustment'),
+                    api.axiosInstance.get('/api/v1/warehouses')
                 ]);
                 
-                if (adjustmentsRes.ok) {
-                    const data = await adjustmentsRes.json();
-                    setAdjustments(data);
-                    setFilteredAdjustments(data);
+                if (adjustmentsRes.data) {
+                    setAdjustments(adjustmentsRes.data);
+                    setFilteredAdjustments(adjustmentsRes.data);
                 }
                 
-                if (warehousesRes.ok) {
-                    const whData = await warehousesRes.json();
-                    setWarehouses(whData);
+                if (warehousesRes.data) {
+                    setWarehouses(warehousesRes.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch adjustments", error);
@@ -88,21 +89,13 @@ export default function AdjustmentsPage() {
 
     async function validateAdjustment(id: string) {
         try {
-            const res = await fetch("/api/adjustments", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
-            });
-            if (res.ok) {
-                // Refresh list
-                const updated = adjustments.map(a => a._id === id ? { ...a, status: "done" } : a);
-                setAdjustments(updated);
-            } else {
-                const err = await res.json();
-                alert(err.message || "Validation failed");
-            }
-        } catch (error) {
+            await api.axiosInstance.put(`/api/v1/stock-movements/${id}`, { status: "done" });
+            // Refresh list
+            const updated = adjustments.map(a => a._id === id ? { ...a, status: "done" } : a);
+            setAdjustments(updated);
+        } catch (error: any) {
             console.error(error);
+            alert(error.response?.data?.message || "Validation failed");
         }
     }
 

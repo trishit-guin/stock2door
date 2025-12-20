@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function DeliveriesPage() {
     const router = useRouter();
@@ -28,24 +30,23 @@ export default function DeliveriesPage() {
     const [warehouseFilter, setWarehouseFilter] = useState("all");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    const { isReadOnly } = useUserRole();
 
     useEffect(() => {
         async function fetchDeliveries() {
             try {
                 const [deliveriesRes, warehousesRes] = await Promise.all([
-                    fetch("/api/moves?type=delivery"),
-                    fetch("/api/warehouses")
+                    api.axiosInstance.get('/api/v1/stock-movements?type=delivery'),
+                    api.axiosInstance.get('/api/v1/warehouses')
                 ]);
                 
-                if (deliveriesRes.ok) {
-                    const data = await deliveriesRes.json();
-                    setDeliveries(data);
-                    setFilteredDeliveries(data);
+                if (deliveriesRes.data) {
+                    setDeliveries(deliveriesRes.data);
+                    setFilteredDeliveries(deliveriesRes.data);
                 }
                 
-                if (warehousesRes.ok) {
-                    const whData = await warehousesRes.json();
-                    setWarehouses(whData);
+                if (warehousesRes.data) {
+                    setWarehouses(warehousesRes.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch deliveries", error);

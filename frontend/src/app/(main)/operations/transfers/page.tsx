@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function TransfersPage() {
     const router = useRouter();
@@ -28,24 +30,23 @@ export default function TransfersPage() {
     const [warehouseFilter, setWarehouseFilter] = useState("all");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    const { isReadOnly } = useUserRole();
 
     useEffect(() => {
         async function fetchTransfers() {
             try {
                 const [transfersRes, warehousesRes] = await Promise.all([
-                    fetch("/api/moves?type=transfer"),
-                    fetch("/api/warehouses")
+                    api.axiosInstance.get('/api/v1/stock-movements?type=transfer'),
+                    api.axiosInstance.get('/api/v1/warehouses')
                 ]);
                 
-                if (transfersRes.ok) {
-                    const data = await transfersRes.json();
-                    setTransfers(data);
-                    setFilteredTransfers(data);
+                if (transfersRes.data) {
+                    setTransfers(transfersRes.data);
+                    setFilteredTransfers(transfersRes.data);
                 }
                 
-                if (warehousesRes.ok) {
-                    const whData = await warehousesRes.json();
-                    setWarehouses(whData);
+                if (warehousesRes.data) {
+                    setWarehouses(warehousesRes.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch transfers", error);

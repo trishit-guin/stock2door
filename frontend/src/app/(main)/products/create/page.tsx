@@ -3,31 +3,32 @@
 import { ProductForm } from "@/components/Products/ProductForm";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function CreateProductPage() {
     const router = useRouter();
-    const [isAuthorized, setIsAuthorized] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const { userRole, isReadOnly, isLoading } = useUserRole();
 
     useEffect(() => {
-        async function checkAuth() {
-            try {
-                const res = await fetch("/api/auth/me");
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.user.role === "manager") {
-                        setIsAuthorized(true);
-                    } else {
-                        router.push("/products");
-                    }
-                } else {
-                    router.push("/login");
-                }
-            } catch (error) {
-                console.error("Auth check failed:", error);
-                router.push("/login");
-            } finally {
-                setIsLoading(false);
+        if (!isLoading) {
+            if (userRole !== "inventory_manager" || isReadOnly) {
+                router.push("/products");
+            }
+        }
+    }, [userRole, isReadOnly, isLoading, router]);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+            </div>
+        );
+    }
+
+    if (userRole !== "inventory_manager" || isReadOnly) {
+        return null;
+    }
             }
         }
         checkAuth();

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
+import api from "@/lib/api";
 
 export function DeliveryForm() {
     const router = useRouter();
@@ -21,22 +22,24 @@ export function DeliveryForm() {
     // Fetch products and warehouses on mount
     useEffect(() => {
         async function fetchData() {
-            const [productsRes, warehousesRes] = await Promise.all([
-                fetch("/api/products"),
-                fetch("/api/warehouses")
-            ]);
+            try {
+                const [productsRes, warehousesRes] = await Promise.all([
+                    api.axiosInstance.get('/api/v1/products'),
+                    api.axiosInstance.get('/api/v1/warehouses')
+                ]);
 
-            if (productsRes.ok) {
-                const data = await productsRes.json();
-                setProducts(data);
-            }
-
-            if (warehousesRes.ok) {
-                const data = await warehousesRes.json();
-                setWarehouses(data);
-                if (data.length > 0) {
-                    setWarehouse(data[0]._id);
+                if (productsRes.data) {
+                    setProducts(productsRes.data);
                 }
+
+                if (warehousesRes.data) {
+                    setWarehouses(warehousesRes.data);
+                    if (warehousesRes.data.length > 0) {
+                        setWarehouse(warehousesRes.data[0]._id);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch data", error);
             }
         }
         fetchData();
@@ -73,11 +76,15 @@ export function DeliveryForm() {
         };
 
         try {
-            const res = await fetch("/api/moves", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+            await api.axiosInstance.post('/api/v1/stock-movements', payload);
+            router.push("/operations/deliveries");
+            router.refresh();
+        } catch (error: any) {
+            console.error(error);
+            alert(error.response?.data?.message || "Failed to create delivery");
+        } finally {
+            setIsLoading(false);
+        }
 
             if (res.ok) {
                 router.push("/operations/deliveries");

@@ -9,38 +9,64 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import api from "@/lib/api";
 
 export default function SignUpPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [role, setRole] = useState("staff");
+    const [role, setRole] = useState("warehouse_staff");
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setIsLoading(true);
 
         const formData = new FormData(event.currentTarget);
+        const username = formData.get("username");
         const firstName = formData.get("first-name");
         const lastName = formData.get("last-name");
         const email = formData.get("email");
         const password = formData.get("password");
 
         try {
-            const res = await fetch("/api/auth/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ firstName, lastName, email, password, role }),
+            const response = await api.register({
+                username: username as string,
+                firstName: firstName as string,
+                lastName: lastName as string,
+                email: email as string,
+                password: password as string,
+                role: role
             });
 
-            if (res.ok) {
+            if (response.data) {
+                // Success message with styling
+                console.log(
+                    '%c🚀 Account Created Successfully!',
+                    'color: #10b981; font-size: 16px; font-weight: bold; padding: 8px; background: #ecfdf5; border-radius: 4px;'
+                );
+                console.log(
+                    `%c👋 Hello, ${firstName}!`,
+                    'color: #3b82f6; font-size: 14px; padding: 4px;'
+                );
+                console.log(
+                    `%c📧 Email: ${email}`,
+                    'color: #6366f1; font-size: 13px; padding: 4px;'
+                );
+                console.log(
+                    `%c🎭 Role: ${role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}`,
+                    'color: #8b5cf6; font-size: 14px; padding: 4px;'
+                );
+                console.log(
+                    '%c✨ Welcome to SmartRoute!',
+                    'color: #f59e0b; font-size: 14px; font-weight: bold; padding: 4px;'
+                );
+                
+                alert("Account created successfully! Please login.");
                 router.push("/login");
-            } else {
-                const data = await res.json();
-                alert(data.message || "Signup failed");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("An error occurred");
+            const errorMessage = error.response?.data?.message || "Signup failed. Please try again.";
+            alert(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -71,6 +97,16 @@ export default function SignUpPage() {
 
                     {/* Form */}
                     <form onSubmit={onSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                            <Label htmlFor="username" className="text-sm font-semibold text-gray-700">Username</Label>
+                            <Input
+                                id="username"
+                                name="username"
+                                placeholder="johndoe"
+                                required
+                                className="h-12 rounded-xl border-gray-200 focus:border-[#1A73E8]"
+                            />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="first-name" className="text-sm font-semibold text-gray-700">First Name</Label>
@@ -118,12 +154,13 @@ export default function SignUpPage() {
                         <div className="space-y-2">
                             <Label htmlFor="role" className="text-sm font-semibold text-gray-700">Role</Label>
                             <Select value={role} onValueChange={setRole}>
-                                <SelectTrigger className="h-12 rounded-xl border-gray-200">
-                                    <SelectValue placeholder="Select Role" />
+                                <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-[#1A73E8]">
+                                    <SelectValue placeholder="Select your role" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="staff">Staff</SelectItem>
-                                    <SelectItem value="manager">Manager</SelectItem>
+                                <SelectContent className="z-50 bg-white border-2 border-gray-200 shadow-xl">
+                                    <SelectItem value="warehouse_staff">Warehouse Staff</SelectItem>
+                                    <SelectItem value="inventory_manager">Inventory Manager</SelectItem>
+                                    <SelectItem value="logistics_manager">Logistics Manager</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                             </Select>

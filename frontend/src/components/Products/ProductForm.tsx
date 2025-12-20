@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 export function ProductForm() {
     const router = useRouter();
@@ -53,22 +54,12 @@ export function ProductForm() {
         };
 
         try {
-            const res = await fetch("/api/products", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-
-            if (res.ok) {
-                router.push("/products");
-                router.refresh();
-            } else {
-                const error = await res.json();
-                alert(error.message || "Failed to create product");
-            }
-        } catch (error) {
+            await api.axiosInstance.post('/api/v1/products', payload);
+            router.push("/products");
+            router.refresh();
+        } catch (error: any) {
             console.error(error);
-            alert("An error occurred");
+            alert(error.response?.data?.message || "Failed to create product");
         } finally {
             setIsLoading(false);
         }
