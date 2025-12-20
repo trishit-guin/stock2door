@@ -39,8 +39,8 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
-      timeout: 10000,
+      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1',
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -121,101 +121,219 @@ class ApiClient {
     return response.data
   }
 
-  // Analytics endpoints
-  public async getDashboardKPIs(): Promise<any> {
-    const response = await this.client.get('/v1/analytics/dashboard')
+  // Vehicle Management
+  public async getVehicles(params?: {
+    page?: number
+    limit?: number
+    status?: string
+    type?: string
+    fuelType?: string
+    warehouseId?: string
+    search?: string
+  }): Promise<any> {
+    const response = await this.client.get('/vehicles', { params })
     return response.data
   }
 
-  public async getFleetStatus(): Promise<any> {
-    const response = await this.client.get('/v1/analytics/fleet-status')
+  public async getVehicleById(id: string): Promise<any> {
+    const response = await this.client.get(`/vehicles/${id}`)
     return response.data
   }
 
-  public async getRecentActivities(limit?: number): Promise<any> {
-    const params = limit ? { limit } : {}
-    const response = await this.client.get('/v1/analytics/recent-activities', { params })
-    return response.data
-  }
-
-  public async getTimeSeriesData(timeRange?: string, metric?: string): Promise<any> {
+  public async getAvailableVehicles(warehouseId?: string, requiredCapacity?: number): Promise<any> {
     const params: any = {}
-    if (timeRange) params.timeRange = timeRange
-    if (metric) params.metric = metric
-    const response = await this.client.get('/v1/analytics/time-series', { params })
-    return response.data
-  }
-
-  public async getRouteEfficiencyAnalysis(): Promise<any> {
-    const response = await this.client.get('/v1/analytics/route-efficiency')
-    return response.data
-  }
-
-  // Vehicle endpoints
-  public async getVehicles(): Promise<any> {
-    const response = await this.client.get('/v1/vehicles')
+    if (warehouseId) params.warehouseId = warehouseId
+    if (requiredCapacity) params.requiredCapacity = requiredCapacity
+    const response = await this.client.get('/vehicles/available', { params })
     return response.data
   }
 
   public async createVehicle(vehicleData: any): Promise<any> {
-    const response = await this.client.post('/v1/vehicles', vehicleData)
+    const response = await this.client.post('/vehicles', vehicleData)
     return response.data
   }
 
   public async updateVehicle(id: string, vehicleData: any): Promise<any> {
-    const response = await this.client.put(`/v1/vehicles/${id}`, vehicleData)
+    const response = await this.client.put(`/vehicles/${id}`, vehicleData)
     return response.data
   }
 
   public async deleteVehicle(id: string): Promise<any> {
-    const response = await this.client.delete(`/v1/vehicles/${id}`)
+    const response = await this.client.delete(`/vehicles/${id}`)
     return response.data
   }
 
-  // Delivery endpoints
-  public async getDeliveries(): Promise<any> {
-    const response = await this.client.get('/v1/deliveries')
+  public async assignDriver(vehicleId: string, driverId: string): Promise<any> {
+    const response = await this.client.put(`/vehicles/${vehicleId}/assign-driver`, { driverId })
+    return response.data
+  }
+
+  public async updateVehicleLocation(vehicleId: string, location: {
+    latitude: number
+    longitude: number
+    address?: string
+  }): Promise<any> {
+    const response = await this.client.put(`/vehicles/${vehicleId}/location`, location)
+    return response.data
+  }
+
+  public async getVehicleMaintenanceHistory(vehicleId: string): Promise<any> {
+    const response = await this.client.get(`/vehicles/${vehicleId}/maintenance`)
+    return response.data
+  }
+
+  public async addVehicleMaintenanceRecord(vehicleId: string, record: any): Promise<any> {
+    const response = await this.client.post(`/vehicles/${vehicleId}/maintenance`, record)
+    return response.data
+  }
+
+  // Delivery Management
+  public async getDeliveries(params?: {
+    page?: number
+    limit?: number
+    status?: string
+    warehouseId?: string
+    driverId?: string
+    priority?: string
+    startDate?: string
+    endDate?: string
+  }): Promise<any> {
+    const response = await this.client.get('/deliveries', { params })
+    return response.data
+  }
+
+  public async getDeliveryById(id: string): Promise<any> {
+    const response = await this.client.get(`/deliveries/${id}`)
+    return response.data
+  }
+
+  public async getPendingDeliveries(warehouseId?: string): Promise<any> {
+    const params = warehouseId ? { warehouseId } : {}
+    const response = await this.client.get('/deliveries/pending', { params })
+    return response.data
+  }
+
+  public async getActiveDeliveries(): Promise<any> {
+    const response = await this.client.get('/deliveries/active')
     return response.data
   }
 
   public async createDelivery(deliveryData: any): Promise<any> {
-    const response = await this.client.post('/v1/deliveries', deliveryData)
+    const response = await this.client.post('/deliveries', deliveryData)
     return response.data
   }
 
-  // Route optimization endpoints
-  public async optimizeRoute(routeData: {
-    source: string;
-    destination: string;
-    vehicleType?: 'LCV' | 'MCV' | 'HCV' | 'THREE_WHEELER';
-    fuelType?: 'DIESEL' | 'PETROL' | 'CNG' | 'ELECTRIC';
-    includeWeather?: boolean;
-    includeAlternatives?: boolean;
-    optimizationWeights?: {
-      emissionsWeight: number;
-      timeWeight: number;
-      costWeight: number;
-    };
-  }): Promise<any> {
-    const response = await this.client.post('/v1/optimize-route/optimize', routeData)
+  public async updateDelivery(id: string, deliveryData: any): Promise<any> {
+    const response = await this.client.put(`/deliveries/${id}`, deliveryData)
     return response.data
   }
 
-  public async getAlternativeRouteWeather(weatherData: {
-    routeIndex: number;
-    startLat: number;
-    startLng: number;
-    endLat: number;
-    endLng: number;
-    duration?: number;
-    routeSteps?: Array<{
-      start_location: { lat: number; lng: number };
-      end_location: { lat: number; lng: number };
-      duration: { value: number };
-    }>;
+  public async optimizeDeliveryRoute(deliveryId: string, options?: {
+    optimizationObjective?: 'emissions' | 'fuel' | 'time' | 'distance' | 'balanced'
+    avoidTolls?: boolean
+    avoidHighways?: boolean
   }): Promise<any> {
-    const response = await this.client.post('/v1/optimize-route/alternative-weather', weatherData)
+    const response = await this.client.post(`/deliveries/${deliveryId}/optimize-route`, options || {})
     return response.data
+  }
+
+  public async startDelivery(id: string): Promise<any> {
+    const response = await this.client.put(`/deliveries/${id}/start`)
+    return response.data
+  }
+
+  public async completeDelivery(id: string, actualMetrics?: {
+    duration?: number
+    fuelConsumption?: number
+    co2Emission?: number
+  }): Promise<any> {
+    const response = await this.client.put(`/deliveries/${id}/complete`, { actualMetrics })
+    return response.data
+  }
+
+  public async addDeliveryTracking(id: string, tracking: {
+    latitude: number
+    longitude: number
+    status: string
+    note?: string
+  }): Promise<any> {
+    const response = await this.client.post(`/deliveries/${id}/tracking`, tracking)
+    return response.data
+  }
+
+  public async cancelDelivery(id: string, reason: string): Promise<any> {
+    const response = await this.client.put(`/deliveries/${id}/cancel`, { reason })
+    return response.data
+  }
+
+  // Analytics & Sustainability
+  public async getSustainabilityMetrics(filters?: {
+    startDate?: string
+    endDate?: string
+    warehouseId?: string
+    vehicleType?: string
+    fuelType?: string
+  }): Promise<any> {
+    const response = await this.client.get('/analytics/sustainability', { params: filters })
+    return response.data
+  }
+
+  public async getRouteAnalytics(startDate?: string, endDate?: string): Promise<any> {
+    const params: any = {}
+    if (startDate) params.startDate = startDate
+    if (endDate) params.endDate = endDate
+    const response = await this.client.get('/analytics/routes', { params })
+    return response.data
+  }
+
+  public async getDeliveryAnalytics(params?: {
+    startDate?: string
+    endDate?: string
+    warehouseId?: string
+  }): Promise<any> {
+    const response = await this.client.get('/analytics/deliveries', { params })
+    return response.data
+  }
+
+  public async getVehicleUtilization(vehicleType?: string, fuelType?: string): Promise<any> {
+    const params: any = {}
+    if (vehicleType) params.vehicleType = vehicleType
+    if (fuelType) params.fuelType = fuelType
+    const response = await this.client.get('/analytics/vehicles', { params })
+    return response.data
+  }
+
+  public async getEmissionAnalytics(startDate?: string, endDate?: string): Promise<any> {
+    const params: any = {}
+    if (startDate) params.startDate = startDate
+    if (endDate) params.endDate = endDate
+    const response = await this.client.get('/analytics/emissions', { params })
+    return response.data
+  }
+
+  public async getFleetComparison(warehouseIds: string[]): Promise<any> {
+    const response = await this.client.post('/analytics/fleet-comparison', { warehouseIds })
+    return response.data
+  }
+
+  // Legacy endpoints for backward compatibility
+  public async getDashboardKPIs(): Promise<any> {
+    return this.getSustainabilityMetrics()
+  }
+
+  public async getFleetStatus(): Promise<any> {
+    return this.getVehicleUtilization()
+  }
+
+  public async getRouteEfficiencyAnalysis(): Promise<any> {
+    return this.getRouteAnalytics()
+  }
+
+  // Route optimization (legacy)
+  public async optimizeRoute(routeData: any): Promise<any> {
+    // This is now handled by optimizeDeliveryRoute
+    console.warn('optimizeRoute is deprecated. Use optimizeDeliveryRoute instead.')
+    return this.optimizeDeliveryRoute(routeData.deliveryId, routeData)
   }
 
   // Generic request method for future endpoints
