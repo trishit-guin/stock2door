@@ -85,20 +85,6 @@ export function ReceiptForm() {
         } finally {
             setIsLoading(false);
         }
-
-            if (res.ok) {
-                router.push("/operations/receipts");
-                router.refresh();
-            } else {
-                const error = await res.json();
-                alert(error.message || "Failed to create receipt");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("An error occurred");
-        } finally {
-            setIsLoading(false);
-        }
     }
 
     return (
