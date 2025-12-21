@@ -69,35 +69,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Feature[]> = {
     FEATURES.INVOICE_GENERATION,
     FEATURES.DELIVERIES,
     FEATURES.SMART_ROUTE,
+    FEATURES.ROUTE_OPTIMIZATION,
+    FEATURES.FLEET_MANAGEMENT,
     FEATURES.MOVE_HISTORY,
     FEATURES.INTERNAL_TRANSFER,
     FEATURES.VIEW_GOODS,
     FEATURES.ADJUSTMENTS,
-  ],
-  
-  logistics_manager: [
-    FEATURES.DELIVERIES,
-    FEATURES.SMART_ROUTE,
-    FEATURES.ROUTE_OPTIMIZATION,
-    FEATURES.FLEET_MANAGEMENT,
-    FEATURES.MOVE_HISTORY,
-    FEATURES.ANALYTICS,
-    FEATURES.VIEW_REPORTS,
-  ],
-  
-  fleet_operator: [
-    FEATURES.DELIVERIES,
-    FEATURES.SMART_ROUTE,
-    FEATURES.FLEET_MANAGEMENT,
-    FEATURES.MOVE_HISTORY,
-  ],
-  
-  sustainability_manager: [
-    FEATURES.EMISSION_TRACKING,
-    FEATURES.SUSTAINABILITY,
-    FEATURES.ANALYTICS,
-    FEATURES.VIEW_REPORTS,
-    FEATURES.SMART_ROUTE,
   ],
   
   auditor: [
@@ -205,51 +182,10 @@ export const ROLE_NAVIGATION: Record<UserRole, { sections: NavigationSection[] }
           { name: 'Invoice Generation', path: '/invoices', feature: FEATURES.INVOICE_GENERATION },
           { name: 'Deliveries', path: '/deliveries', feature: FEATURES.DELIVERIES },
           { name: 'Smart Route', path: '/routes', feature: FEATURES.SMART_ROUTE },
+          { name: 'Fleet Management', path: '/fleet', feature: FEATURES.FLEET_MANAGEMENT },
           { name: 'Move History', path: '/move-history', feature: FEATURES.MOVE_HISTORY },
           { name: 'Internal Transfer', path: '/transfer', feature: FEATURES.INTERNAL_TRANSFER },
           { name: 'Adjustments', path: '/adjustments', feature: FEATURES.ADJUSTMENTS },
-        ],
-      },
-    ],
-  },
-  
-  logistics_manager: {
-    sections: [
-      {
-        title: 'Logistics',
-        items: [
-          { name: 'Deliveries', path: '/deliveries', feature: FEATURES.DELIVERIES },
-          { name: 'Smart Route', path: '/routes', feature: FEATURES.SMART_ROUTE },
-          { name: 'Fleet Management', path: '/fleet', feature: FEATURES.FLEET_MANAGEMENT },
-          { name: 'Move History', path: '/move-history', feature: FEATURES.MOVE_HISTORY },
-          { name: 'Analytics', path: '/analytics', feature: FEATURES.ANALYTICS },
-        ],
-      },
-    ],
-  },
-  
-  fleet_operator: {
-    sections: [
-      {
-        title: 'Fleet Operations',
-        items: [
-          { name: 'Deliveries', path: '/deliveries', feature: FEATURES.DELIVERIES },
-          { name: 'Smart Route', path: '/routes', feature: FEATURES.SMART_ROUTE },
-          { name: 'Fleet Management', path: '/fleet', feature: FEATURES.FLEET_MANAGEMENT },
-        ],
-      },
-    ],
-  },
-  
-  sustainability_manager: {
-    sections: [
-      {
-        title: 'Sustainability',
-        items: [
-          { name: 'Emissions', path: '/emissions', feature: FEATURES.EMISSION_TRACKING },
-          { name: 'Sustainability Dashboard', path: '/sustainability', feature: FEATURES.SUSTAINABILITY },
-          { name: 'Analytics', path: '/analytics', feature: FEATURES.ANALYTICS },
-          { name: 'Smart Route', path: '/routes', feature: FEATURES.SMART_ROUTE },
         ],
       },
     ],

@@ -8,33 +8,31 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 
-interface Location {
+interface Inventory {
     _id: string;
-    country: string;
-    state: string;
-    city: string;
+    name: string;
+    email: string;
 }
 
 export function WarehouseForm() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [warehouseId, setWarehouseId] = useState("");
-    const [type, setType] = useState("internal");
-    const [locationId, setLocationId] = useState("");
-    const [locations, setLocations] = useState<Location[]>([]);
+    const [inventoryId, setInventoryId] = useState("");
+    const [inventories, setInventories] = useState<Inventory[]>([]);
 
     useEffect(() => {
-        fetchLocations();
+        fetchInventories();
     }, []);
 
-    async function fetchLocations() {
+    async function fetchInventories() {
         try {
-            const response = await api.axiosInstance.get('/api/v1/warehouses');
+            const response = await api.axiosInstance.get('/inventories');
             if (response.data) {
-                setLocations(response.data);
+                const inventoriesData = response.data.data || response.data.inventories || response.data;
+                setInventories(Array.isArray(inventoriesData) ? inventoriesData : []);
             }
         } catch (error) {
-            console.error("Failed to fetch locations:", error);
+            console.error("Failed to fetch inventories:", error);
         }
     }
 
@@ -42,23 +40,32 @@ export function WarehouseForm() {
         event.preventDefault();
         setIsLoading(true);
 
-        if (!locationId) {
-            alert("Please select a location");
+        if (!inventoryId) {
+            alert("Please select an inventory");
             setIsLoading(false);
             return;
         }
 
         const formData = new FormData(event.currentTarget);
         const payload = {
-            warehouseId: warehouseId,
+            inventoryId: inventoryId,
+            warehouseCode: formData.get("warehouseCode"),
             name: formData.get("name"),
-            type: type,
-            address: formData.get("address"),
-            locationId: locationId,
+            warehouseType: formData.get("warehouseType") || "STORAGE",
+            location: {
+                street: formData.get("street"),
+                city: formData.get("city"),
+                state: formData.get("state"),
+                country: formData.get("country"),
+                zipCode: formData.get("zipCode")
+            },
+            contactEmail: formData.get("contactEmail"),
+            contactPhone: formData.get("contactPhone")
         };
 
         try {
-            await api.axiosInstance.post('/api/v1/warehouses', payload);
+            await api.axiosInstance.post('/warehouses', payload);
+            alert('Warehouse created successfully!');
             router.push("/operations/warehouse");
             router.refresh();
         } catch (error: any) {
@@ -72,53 +79,91 @@ export function WarehouseForm() {
     return (
         <form onSubmit={onSubmit} className="space-y-8">
             <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                    <Label htmlFor="warehouseId">Warehouse ID</Label>
-                    <Input 
-                        id="warehouseId" 
-                        value={warehouseId}
-                        onChange={(e) => setWarehouseId(e.target.value)}
-                        placeholder="e.g. WH-001, CENTRAL-001" 
-                        required 
-                    />
-                    <p className="text-xs text-gray-500">Unique identifier for this warehouse</p>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="name">Warehouse Name</Label>
-                    <Input id="name" name="name" placeholder="e.g. Central Warehouse" required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
-                    <Select value={type} onValueChange={setType}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="internal">Internal</SelectItem>
-                            <SelectItem value="customer">Customer</SelectItem>
-                            <SelectItem value="supplier">Supplier</SelectItem>
-                            <SelectItem value="transit">Transit</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
                 <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="location">Location *</Label>
-                    <Select value={locationId} onValueChange={setLocationId} required>
+                    <Label htmlFor="inventory">Parent Inventory *</Label>
+                    <Select value={inventoryId} onValueChange={setInventoryId} required>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select Location" />
+                            <SelectValue placeholder="Select Inventory" />
                         </SelectTrigger>
                         <SelectContent>
-                            {locations.map((loc) => (
-                                <SelectItem key={loc._id} value={loc._id}>
-                                    {loc.city}, {loc.state}, {loc.country}
+                            {inventories.map((inv) => (
+                                <SelectItem key={inv._id} value={inv._id}>
+                                    {inv.name} ({inv.email})
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500">Select the inventory this warehouse belongs to</p>
                 </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="warehouseCode">Warehouse Code *</Label>
+                    <Input 
+                        id="warehouseCode" 
+                        name="warehouseCode"
+                        placeholder="e.g. WH001, CENTRAL" 
+                        required 
+                    />
+                    <p className="text-xs text-gray-500">Unique code (uppercase)</p>
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="name">Warehouse Name *</Label>
+                    <Input id="name" name="name" placeholder="e.g. Central Warehouse" required />
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="warehouseType">Warehouse Type</Label>
+                    <Select name="warehouseType" defaultValue="storage">
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="storage">Storage</SelectItem>
+                            <SelectItem value="distribution">Distribution</SelectItem>
+                            <SelectItem value="cold_storage">Cold Storage</SelectItem>
+                            <SelectItem value="hazmat">Hazmat</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="contactEmail">Contact Email</Label>
+                    <Input id="contactEmail" name="contactEmail" type="email" placeholder="warehouse@example.com" />
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="contactPhone">Contact Phone</Label>
+                    <Input id="contactPhone" name="contactPhone" type="tel" placeholder="+1234567890" />
+                </div>
+
                 <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input id="address" name="address" placeholder="e.g. 123 Logistics Way" />
+                    <h3 className="text-lg font-semibold">Location Details</h3>
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="street">Street Address</Label>
+                    <Input id="street" name="street" placeholder="123 Logistics Way" />
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="city">City *</Label>
+                    <Input id="city" name="city" placeholder="New York" required />
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="state">State/Province *</Label>
+                    <Input id="state" name="state" placeholder="NY" required />
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="country">Country *</Label>
+                    <Input id="country" name="country" placeholder="USA" required />
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="zipCode">Zip/Postal Code</Label>
+                    <Input id="zipCode" name="zipCode" placeholder="10001" />
                 </div>
             </div>
 
@@ -127,7 +172,7 @@ export function WarehouseForm() {
                     Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Create Warehouse"}
+                    {isLoading ? "Creating..." : "Create Warehouse"}
                 </Button>
             </div>
         </form>

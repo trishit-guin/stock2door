@@ -54,9 +54,10 @@ export default function StockPage() {
 
     async function fetchWarehouses() {
         try {
-            const response = await api.axiosInstance.get('/api/v1/warehouses');
+            const response = await api.axiosInstance.get('/warehouses');
             if (response.data) {
-                setWarehouses(response.data);
+                const warehousesData = response.data.data || response.data;
+                setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
             }
         } catch (error) {
             console.error("Error fetching warehouses:", error);
@@ -74,9 +75,21 @@ export default function StockPage() {
                 params.append("lowStock", "true");
             }
 
-            const response = await api.axiosInstance.get(`/api/v1/stock?${params}`);
+            const response = await api.axiosInstance.get(`/stocks?${params}`);
             if (response.data) {
-                setStockData(response.data);
+                const stockArray = response.data.data || response.data;
+                
+                // Calculate statistics from the stock data
+                const statistics = {
+                    totalProducts: Array.isArray(stockArray) ? stockArray.length : 0,
+                    totalStock: Array.isArray(stockArray) ? stockArray.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) : 0,
+                    lowStockCount: Array.isArray(stockArray) ? stockArray.filter((item: any) => (item.quantity || 0) <= (item.reorderLevel || 0)).length : 0
+                };
+                
+                setStockData({
+                    products: Array.isArray(stockArray) ? stockArray : [],
+                    statistics
+                });
             }
         } catch (error) {
             console.error("Error fetching stock:", error);

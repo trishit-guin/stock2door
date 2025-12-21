@@ -45,14 +45,13 @@ export default function Navigation() {
   }
 
   const getSustainabilityOnlyNavigation = () => [
-    { name: 'Sustainability Dashboard', href: '/dashboard/sustainability', icon: GlobeAltIcon },
     { name: 'Environmental Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: CogIcon },
   ]
 
   const allNavigation = user?.role === 'admin' 
     ? [...navigation, ...adminNavigation, ...sustainabilityNavigation]
-    : user?.role === 'sustainability_manager'
+    : user?.role === 'environment_manager'
     ? getSustainabilityOnlyNavigation()
     : navigation
 

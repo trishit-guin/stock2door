@@ -9,7 +9,7 @@ export interface User {
   name?: string
   firstName?: string
   lastName?: string
-  role: 'admin' | 'logistics_manager' | 'fleet_operator' | 'sustainability_manager' | 'manager' | 'staff'
+  role: 'admin' | 'inventory_manager' | 'warehouse_staff' | 'environment_manager' | 'auditor'
 }
 
 // SmartRoute Types

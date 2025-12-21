@@ -11,7 +11,8 @@ export default function CreateWarehousePage() {
 
     useEffect(() => {
         if (!isLoading) {
-            if (userRole !== "inventory_manager" || isReadOnly) {
+            // Allow both admin and inventory_manager
+            if (userRole !== "inventory_manager" && userRole !== "admin") {
                 router.push("/operations/warehouse");
             }
         }
@@ -25,7 +26,7 @@ export default function CreateWarehousePage() {
         );
     }
 
-    if (!isAuthorized) {
+    if (userRole !== "inventory_manager" && userRole !== "admin") {
         return null;
     }
 

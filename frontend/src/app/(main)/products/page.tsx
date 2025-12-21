@@ -17,7 +17,7 @@ export default function ProductsPage() {
     useEffect(() => {
         async function fetchProducts() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/products');
+                const response = await api.axiosInstance.get('/products');
                 if (response.data) {
                     setProducts(response.data);
                 }
@@ -98,7 +98,7 @@ export default function ProductsPage() {
                 let successCount = 0;
                 for (const product of productsToImport) {
                     try {
-                        await api.axiosInstance.post('/api/v1/products', product);
+                        await api.axiosInstance.post('/products', product);
                         successCount++;
                     } catch (err) {
                         console.error("Failed to import:", product.name);

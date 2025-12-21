@@ -25,16 +25,17 @@ export default function WarehousePage() {
     useEffect(() => {
         async function fetchData() {
             try {
-                // Check authorization
+                // Check authorization - allow admin and inventory_manager
                 if (userRole !== "inventory_manager" && userRole !== "admin") {
                     router.push("/dashboard");
                     return;
                 }
 
                 // Fetch warehouses
-                const response = await api.axiosInstance.get('/api/v1/warehouses');
+                const response = await api.axiosInstance.get('/warehouses');
                 if (response.data) {
-                    setLocations(response.data);
+                    const warehousesData = response.data.data || response.data;
+                    setLocations(Array.isArray(warehousesData) ? warehousesData : []);
                 }
             } catch (error) {
                 console.error("Failed to fetch warehouses", error);
@@ -49,7 +50,7 @@ export default function WarehousePage() {
 
     if (isLoading) return <div>Loading warehouses...</div>;
 
-    const canManage = userRole === "inventory_manager" && !isReadOnly;
+    const canManage = (userRole === "inventory_manager" || userRole === "admin") && !isReadOnly;
 
     return (
         <div className="space-y-6">

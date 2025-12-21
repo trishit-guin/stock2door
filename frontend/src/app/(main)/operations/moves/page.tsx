@@ -29,7 +29,7 @@ export default function MoveHistoryPage() {
     useEffect(() => {
         async function fetchMoves() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/stock-movements');
+                const response = await api.axiosInstance.get('/movements');
                 if (response.data) {
                     setMoves(response.data);
                 }

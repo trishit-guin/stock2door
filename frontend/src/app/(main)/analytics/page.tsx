@@ -227,10 +227,10 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-text-primary">
-            {user?.role === 'sustainability_manager' ? 'Environmental Analytics' : 'Analytics & Insights'}
+            {user?.role === 'environment_manager' ? 'Environmental Analytics' : 'Analytics & Insights'}
           </h1>
           <p className="text-text-secondary mt-2">
-            {user?.role === 'sustainability_manager' 
+            {user?.role === 'environment_manager' 
               ? 'Monitor environmental impact, emissions reduction, and sustainability performance.'
               : 'Track your sustainability metrics and fleet performance.'
             }

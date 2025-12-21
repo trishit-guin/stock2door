@@ -84,7 +84,7 @@ export default function InvoicesPage() {
     async function fetchInvoices() {
         setIsLoading(true);
         try {
-            const response = await api.axiosInstance.get('/api/v1/invoices');
+            const response = await api.axiosInstance.get('/invoices');
             if (response.data) {
                 setInvoices(response.data.data || response.data.invoices || []);
             }
@@ -97,7 +97,7 @@ export default function InvoicesPage() {
 
     async function fetchWarehouses() {
         try {
-            const response = await api.axiosInstance.get('/api/v1/warehouses');
+            const response = await api.axiosInstance.get('/warehouses');
             if (response.data) {
                 setWarehouses(response.data.data || response.data.warehouses || []);
             }
@@ -108,7 +108,7 @@ export default function InvoicesPage() {
 
     async function fetchProducts() {
         try {
-            const response = await api.axiosInstance.get('/api/v1/products');
+            const response = await api.axiosInstance.get('/products');
             if (response.data) {
                 setProducts(response.data.data || response.data.products || []);
             }
@@ -154,7 +154,7 @@ export default function InvoicesPage() {
 
         setIsSubmitting(true);
         try {
-            const response = await api.axiosInstance.post('/api/v1/invoices', {
+            const response = await api.axiosInstance.post('/invoices', {
                 customerName,
                 customerEmail,
                 customerPhone,

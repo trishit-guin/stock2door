@@ -36,8 +36,8 @@ export default function AdjustmentsPage() {
         async function fetchAdjustments() {
             try {
                 const [adjustmentsRes, warehousesRes] = await Promise.all([
-                    api.axiosInstance.get('/api/v1/stock-movements?type=adjustment'),
-                    api.axiosInstance.get('/api/v1/warehouses')
+                    api.axiosInstance.get('/movements?type=adjustment'),
+                    api.axiosInstance.get('/warehouses')
                 ]);
                 
                 if (adjustmentsRes.data) {
@@ -89,7 +89,7 @@ export default function AdjustmentsPage() {
 
     async function validateAdjustment(id: string) {
         try {
-            await api.axiosInstance.put(`/api/v1/stock-movements/${id}`, { status: "done" });
+            await api.axiosInstance.put(`/movements/${id}`, { status: "done" });
             // Refresh list
             const updated = adjustments.map(a => a._id === id ? { ...a, status: "done" } : a);
             setAdjustments(updated);

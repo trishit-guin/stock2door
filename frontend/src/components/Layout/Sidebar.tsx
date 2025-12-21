@@ -20,15 +20,17 @@ import {
     Route,
     Navigation,
     Leaf,
-    Users
+    Users,
+    Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { GlobalSearch } from "./GlobalSearch";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 
-type UserRole = 'admin' | 'inventory_manager' | 'logistics_manager' | 'warehouse_staff' | 'fleet_operator' | 'environment_manager' | 'sustainability_manager' | 'auditor';
+type UserRole = 'admin' | 'inventory_manager' | 'warehouse_staff' | 'environment_manager' | 'auditor';
 
 interface NavigationItem {
     name: string;
@@ -54,7 +56,7 @@ const navigation: NavigationItem[] = [
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
         activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
-        roles: ['admin', 'inventory_manager', 'logistics_manager', 'warehouse_staff']
+        roles: ['admin', 'inventory_manager', 'warehouse_staff']
     },
     {
         name: "Products",
@@ -75,7 +77,7 @@ const navigation: NavigationItem[] = [
         roles: ['admin', 'inventory_manager', 'warehouse_staff']
     },
     {
-        name: "Warehouse Operations",
+        name: "Operations",
         icon: ArrowRightLeft,
         color: "text-green-600",
         bgColor: "bg-green-50",
@@ -84,24 +86,12 @@ const navigation: NavigationItem[] = [
         children: [
             { name: "Receipts", href: "/operations/receipts", icon: ClipboardList, roles: ['admin', 'warehouse_staff'] },
             { name: "Invoice Generation", href: "/operations/invoices", icon: ClipboardList, roles: ['admin', 'warehouse_staff'] },
+            { name: "Deliveries", href: "/operations/deliveries", icon: Truck, roles: ['admin', 'warehouse_staff'] },
+            { name: "Smart Route", href: "/routes", icon: Route, roles: ['admin', 'warehouse_staff'] },
+            { name: "Fleet Management", href: "/fleet", icon: Truck, roles: ['admin', 'warehouse_staff'] },
             { name: "Internal Transfers", href: "/operations/transfers", icon: ArrowRightLeft, roles: ['admin', 'warehouse_staff'] },
             { name: "Adjustments", href: "/operations/adjustments", icon: Settings, roles: ['admin', 'warehouse_staff'] },
             { name: "Move History", href: "/operations/moves", icon: History, roles: ['admin', 'warehouse_staff'] },
-        ],
-    },
-    {
-        name: "Logistics Operations",
-        icon: Truck,
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-        activeColor: "bg-orange-50 text-orange-600 border-orange-200",
-        roles: ['admin', 'logistics_manager'],
-        children: [
-            { name: "Deliveries", href: "/operations/deliveries", icon: Truck, roles: ['admin', 'logistics_manager'] },
-            { name: "Smart Route", href: "/routes", icon: Route, roles: ['admin', 'logistics_manager'] },
-            { name: "Route Optimization", href: "/routes/optimize", icon: Navigation, roles: ['admin', 'logistics_manager'] },
-            { name: "Fleet Management", href: "/fleet", icon: Truck, roles: ['admin', 'logistics_manager'] },
-            { name: "Move History", href: "/operations/moves", icon: History, roles: ['admin', 'logistics_manager'] },
         ],
     },
     {
@@ -114,13 +104,22 @@ const navigation: NavigationItem[] = [
         roles: ['admin', 'inventory_manager']
     },
     {
+        name: "Inventories",
+        href: "/inventories",
+        icon: Building,
+        color: "text-purple-600",
+        bgColor: "bg-purple-50",
+        activeColor: "bg-purple-50 text-purple-600 border-purple-200",
+        roles: ['admin']
+    },
+    {
         name: "Analytics",
         href: "/analytics",
         icon: BarChart3,
         color: "text-blue-600",
         bgColor: "bg-blue-50",
         activeColor: "bg-blue-50 text-blue-600 border-blue-200",
-        roles: ['admin', 'inventory_manager']
+        roles: ['admin', 'inventory_manager', 'environment_manager']
     },
     {
         name: "Reports",
@@ -129,7 +128,7 @@ const navigation: NavigationItem[] = [
         color: "text-[#1A73E8]",
         bgColor: "bg-[#1A73E8]/10",
         activeColor: "bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20",
-        roles: ['admin', 'inventory_manager', 'logistics_manager']
+        roles: ['admin', 'inventory_manager', 'auditor']
     },
     {
         name: "User Management",
@@ -147,7 +146,7 @@ const navigation: NavigationItem[] = [
         color: "text-slate-600",
         bgColor: "bg-slate-100",
         activeColor: "bg-slate-100 text-slate-600 border-slate-200",
-        roles: ['admin', 'logistics_manager']
+        roles: ['admin', 'inventory_manager']
     },
 ];
 
@@ -164,24 +163,10 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
     useEffect(() => {
         async function fetchUserRole() {
             try {
-                // Get token from localStorage
-                const token = localStorage.getItem('smartroute_token');
-                if (!token) {
-                    setUserRole('warehouse_staff' as UserRole); // Default fallback
-                    return;
-                }
-
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/auth/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    const role = data.user?.role || data.data?.role;
+                const response = await api.axiosInstance.get('/auth/me');
+                if (response.data) {
+                    const role = response.data.user?.role || response.data.data?.role || response.data.role;
                     setUserRole(role);
-                } else {
-                    setUserRole('warehouse_staff' as UserRole); // Default fallback
                 }
             } catch (error) {
                 console.error("Failed to fetch user role:", error);
@@ -215,11 +200,8 @@ export function Sidebar({ onProfileClick }: SidebarProps = {}) {
         const roleMap: Record<UserRole, string> = {
             'admin': 'Admin',
             'inventory_manager': 'Inventory Manager',
-            'logistics_manager': 'Logistics Manager',
             'warehouse_staff': 'Warehouse Staff',
-            'fleet_operator': 'Fleet Operator',
             'environment_manager': 'Environment Manager',
-            'sustainability_manager': 'Sustainability Manager',
             'auditor': 'Auditor'
         };
         return roleMap[role] || 'User';

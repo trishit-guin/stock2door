@@ -22,36 +22,25 @@ export function ActivityLog() {
     useEffect(() => {
         async function fetchActivities() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/dashboard/activity');
-                if (response.data) {
-                    setActivities(response.data.slice(0, 10)); // Show last 10
-                }
-            } catch (error) {
-                console.error("Failed to fetch activities", error);
-                // Fallback to recent operations if activity log doesn't exist yet
-                fetchFallbackActivities();
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        async function fetchFallbackActivities() {
-            try {
-                const response = await api.axiosInstance.get('/api/v1/stock-movements?limit=10');
-                if (response.data) {
-                    const moves = response.data;
-                    const formatted = moves.map((move: any) => ({
+                const response = await api.axiosInstance.get('/dashboard/activity?limit=10');
+                console.log('Activity Log Response:', response.data);
+                if (response.data && response.data.data) {
+                    const movements = response.data.data;
+                    console.log('Activities Count:', movements.length);
+                    const formatted = movements.map((move: any) => ({
                         _id: move._id,
-                        type: move.type,
-                        action: `${move.type} ${move.status}`,
-                        userName: move.createdBy?.name || "System",
-                        details: `${move.type.charAt(0).toUpperCase() + move.type.slice(1)} operation`,
+                        type: move.movementType || move.type || 'movement',
+                        action: `${(move.movementType || move.type || 'Movement').replace('_', ' ')} - ${move.status}`,
+                        userName: move.createdBy?.firstName ? `${move.createdBy.firstName} ${move.createdBy.lastName}` : 'System',
+                        details: move.productId?.name || move.notes || 'Stock movement',
                         timestamp: move.createdAt
                     }));
                     setActivities(formatted);
                 }
             } catch (error) {
-                console.error("Failed to fetch fallback activities", error);
+                console.error("Failed to fetch activities", error);
+            } finally {
+                setIsLoading(false);
             }
         }
 

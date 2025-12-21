@@ -76,7 +76,7 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
 
         try {
             // Update profile using backend API
-            const response = await api.axiosInstance.put('/api/auth/profile', {
+            const response = await api.axiosInstance.put('/auth/profile', {
                 firstName,
                 lastName,
                 email
@@ -134,7 +134,7 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
         setSuccess(null);
 
         try {
-            const response = await api.axiosInstance.put('/api/auth/change-password', {
+            const response = await api.axiosInstance.put('/auth/change-password', {
                 currentPassword,
                 newPassword
             });
@@ -293,7 +293,7 @@ export function ProfileDialog({ isOpen, onClose }: ProfileDialogProps) {
                                             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold ring-1 ring-inset font-display ${
                                                 profile.role === 'admin' 
                                                     ? 'bg-purple-100 text-purple-700 ring-purple-200'
-                                                    : profile.role === 'logistics_manager' || profile.role === 'inventory_manager'
+                                                    : profile.role === 'inventory_manager'
                                                     ? 'bg-primary/10 text-primary ring-primary/20'
                                                     : 'bg-secondary/10 text-secondary ring-secondary/20'
                                                 }`}>

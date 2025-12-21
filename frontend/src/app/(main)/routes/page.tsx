@@ -40,7 +40,7 @@ export default function SmartRoutePage() {
 
     async function fetchVehicles() {
         try {
-            const response = await api.axiosInstance.get('/api/v1/vehicles');
+            const response = await api.axiosInstance.get('/vehicles');
             if (response.data) {
                 setVehicles(response.data.data || response.data.vehicles || []);
             }
@@ -78,7 +78,7 @@ export default function SmartRoutePage() {
 
         setIsLoading(true);
         try {
-            const response = await api.axiosInstance.post('/api/v1/routes/generate', {
+            const response = await api.axiosInstance.post('/routes/generate', {
                 vehicleId: selectedVehicle,
                 startLocation,
                 deliveryPoints

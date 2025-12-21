@@ -22,9 +22,21 @@ export function MyOperations() {
     useEffect(() => {
         async function fetchOperations() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/stock-movements?limit=10');
+                const response = await api.axiosInstance.get('/movements?limit=10');
+                console.log('My Operations Response:', response.data);
                 if (response.data) {
-                    setOperations(response.data || []);
+                    const movements = response.data.data || response.data;
+                    console.log('Operations Count:', Array.isArray(movements) ? movements.length : 0);
+                    const formatted = Array.isArray(movements) ? movements.map((move: any) => ({
+                        _id: move._id,
+                        type: move.movementType || move.type || 'movement',
+                        status: move.status || 'pending',
+                        itemCount: move.quantity || 1,
+                        createdAt: move.createdAt,
+                        sourceLocation: move.sourceWarehouseId?.name || move.sourceWarehouse?.name,
+                        destinationLocation: move.destinationWarehouseId?.name || move.destinationWarehouse?.name
+                    })) : [];
+                    setOperations(formatted);
                 }
             } catch (error) {
                 console.error("Failed to fetch operations:", error);

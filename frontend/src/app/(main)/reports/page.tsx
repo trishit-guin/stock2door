@@ -29,7 +29,7 @@ export default function ReportsPage() {
     useEffect(() => {
         async function fetchWarehouses() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/warehouses');
+                const response = await api.axiosInstance.get('/warehouses');
                 if (response.data) {
                     setWarehouses(response.data);
                 }

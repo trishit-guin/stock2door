@@ -47,8 +47,8 @@ export default function LocationsPage() {
     async function fetchData() {
         try {
             const [locationsRes, warehousesRes] = await Promise.all([
-                api.axiosInstance.get('/api/v1/warehouses'),
-                api.axiosInstance.get('/api/v1/warehouses')
+                api.axiosInstance.get('/warehouses'),
+                api.axiosInstance.get('/warehouses')
             ]);
 
             if (locationsRes.data) {

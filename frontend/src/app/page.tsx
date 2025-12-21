@@ -46,18 +46,11 @@ export default function LandingPage() {
                 </button>
               </Link>
             ) : (
-              <>
-                <Link href="/login">
-                  <button className="font-medium px-6 py-2.5 text-gray-700 hover:text-[#1A73E8] transition-colors">
-                    Login
-                  </button>
-                </Link>
-                <Link href="/signup">
-                  <button className="font-medium px-6 py-2.5 bg-[#1A73E8] text-white rounded-lg shadow-md hover:bg-[#1557b0] hover:shadow-lg transition-all">
-                    Sign Up
-                  </button>
-                </Link>
-              </>
+              <Link href="/login">
+                <button className="font-medium px-6 py-2.5 bg-[#1A73E8] text-white rounded-lg shadow-md hover:bg-[#1557b0] hover:shadow-lg transition-all">
+                  Login
+                </button>
+              </Link>
             )}
           </div>
         </div>

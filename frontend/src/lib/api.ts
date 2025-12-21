@@ -107,6 +107,11 @@ class ApiClient {
     localStorage.removeItem('smartroute_token')
   }
 
+  // Expose axios instance for direct use
+  public get axiosInstance(): AxiosInstance {
+    return this.client
+  }
+
   // Auth endpoints
   public async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await this.client.post('/auth/login', credentials)

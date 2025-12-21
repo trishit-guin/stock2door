@@ -26,6 +26,8 @@ export default function Dashboard() {
     const [error, setError] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userName, setUserName] = useState("");
+    const [totalWarehouses, setTotalWarehouses] = useState(0);
+    const [pendingDeliveries, setPendingDeliveries] = useState(0);
 
     useEffect(() => {
         async function fetchData() {
@@ -44,12 +46,40 @@ export default function Dashboard() {
                     }
                 }
 
-                // Fetch stats (only for managers/admin)
+                // Fetch stats from backend
                 const statsData = await api.getDashboardStats();
-                if (statsData) {
-                    setStats(statsData.data || statsData);
+                console.log('Dashboard Stats Response:', statsData);
+                if (statsData && statsData.data) {
+                    console.log('Stats Data:', statsData.data);
+                    setStats(statsData.data);
                 } else {
                     setError("Failed to load dashboard statistics");
+                }
+
+                // Fetch warehouses count
+                try {
+                    const warehousesData = await api.axiosInstance.get('/warehouses');
+                    console.log('Warehouses Response:', warehousesData.data);
+                    if (warehousesData.data) {
+                        const warehouses = warehousesData.data.data || warehousesData.data;
+                        console.log('Warehouses Count:', Array.isArray(warehouses) ? warehouses.length : 0);
+                        setTotalWarehouses(Array.isArray(warehouses) ? warehouses.length : 0);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch warehouses:', err);
+                }
+
+                // Fetch pending deliveries count
+                try {
+                    const deliveriesData = await api.axiosInstance.get('/deliveries?status=pending');
+                    console.log('Deliveries Response:', deliveriesData.data);
+                    if (deliveriesData.data) {
+                        const deliveries = deliveriesData.data.data || deliveriesData.data;
+                        console.log('Pending Deliveries Count:', Array.isArray(deliveries) ? deliveries.length : 0);
+                        setPendingDeliveries(Array.isArray(deliveries) ? deliveries.length : 0);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch deliveries:', err);
                 }
             } catch (err: any) {
                 setError(err.response?.data?.message || "An error occurred while loading data");
@@ -65,8 +95,22 @@ export default function Dashboard() {
         const interval = setInterval(async () => {
             try {
                 const statsData = await api.getDashboardStats();
-                if (statsData) {
-                    setStats(statsData.data || statsData);
+                if (statsData && statsData.data) {
+                    setStats(statsData.data);
+                }
+                
+                // Refresh warehouses
+                const warehousesData = await api.axiosInstance.get('/warehouses');
+                if (warehousesData.data) {
+                    const warehouses = warehousesData.data.data || warehousesData.data;
+                    setTotalWarehouses(Array.isArray(warehouses) ? warehouses.length : 0);
+                }
+
+                // Refresh deliveries
+                const deliveriesData = await api.axiosInstance.get('/deliveries?status=pending');
+                if (deliveriesData.data) {
+                    const deliveries = deliveriesData.data.data || deliveriesData.data;
+                    setPendingDeliveries(Array.isArray(deliveries) ? deliveries.length : 0);
                 }
             } catch (err) {
                 console.error(err);
@@ -109,7 +153,7 @@ export default function Dashboard() {
                 <StatsCard
                     index={0}
                     title="Total Products"
-                    value={stats.totalProducts}
+                    value={stats.totalProducts || 0}
                     icon={Package}
                     color="text-blue-500"
                     description="Active items in inventory"
@@ -118,7 +162,7 @@ export default function Dashboard() {
                 <StatsCard
                     index={1}
                     title="Total Stock"
-                    value={stats.totalStock}
+                    value={stats.totalStock || 0}
                     icon={TrendingUp}
                     color="text-green-500"
                     description="Total units across warehouses"
@@ -127,7 +171,7 @@ export default function Dashboard() {
                 <StatsCard
                     index={2}
                     title="Low Stock Items"
-                    value={stats.lowStockItems}
+                    value={stats.lowStockItems || 0}
                     icon={AlertTriangle}
                     color="text-red-500"
                     description="Items below minimum level"
@@ -135,20 +179,29 @@ export default function Dashboard() {
                 />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
                 <StatsCard
                     index={3}
+                    title="Total Warehouses"
+                    value={totalWarehouses}
+                    icon={WarehouseIcon}
+                    color="text-indigo-500"
+                    description="Active warehouse locations"
+                    href="/locations"
+                />
+                <StatsCard
+                    index={4}
                     title="Pending Receipts"
-                    value={stats.pendingMoves}
+                    value={stats.pendingMoves || 0}
                     icon={ClipboardList}
                     color="text-orange-500"
                     description="Receipts waiting to process"
                     href="/operations/receipts"
                 />
                 <StatsCard
-                    index={4}
+                    index={5}
                     title="Pending Deliveries"
-                    value={0}
+                    value={pendingDeliveries}
                     icon={Truck}
                     color="text-purple-500"
                     description="Orders ready to ship"

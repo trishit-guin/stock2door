@@ -20,9 +20,6 @@ export type UserRole =
   | 'warehouse_staff'
   | 'environment_manager'
   | 'auditor'
-  | 'logistics_manager'
-  | 'fleet_operator'
-  | 'sustainability_manager'
 
 // Vehicle Types
 export interface Vehicle {

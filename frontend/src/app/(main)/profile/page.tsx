@@ -45,7 +45,7 @@ export default function ProfilePage() {
         setIsSaving(true);
 
         try {
-            const response = await api.axiosInstance.put('/api/v1/auth/profile', formData);
+            const response = await api.axiosInstance.put('/auth/profile', formData);
             if (response.data) {
                 setUser(response.data);
                 setIsEditing(false);

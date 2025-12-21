@@ -22,11 +22,19 @@ export function LowStockAlert() {
     useEffect(() => {
         async function fetchLowStockProducts() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/products');
-                if (response.data) {
-                    // Filter products below reorder level
-                    const lowStock = response.data.filter((p: any) => p.totalStock < p.reorderLevel);
-                    setProducts(lowStock.slice(0, 5)); // Show top 5
+                const response = await api.axiosInstance.get('/dashboard/low-stock');
+                console.log('Low Stock Alerts Response:', response.data);
+                if (response.data && response.data.data) {
+                    const alerts = response.data.data;
+                    console.log('Low Stock Alerts Count:', alerts.length);
+                    const formatted = alerts.map((alert: any) => ({
+                        _id: alert._id,
+                        name: alert.productId?.name || 'Unknown Product',
+                        sku: alert.productId?.sku || 'N/A',
+                        totalStock: alert.currentStock || 0,
+                        minStock: alert.threshold || alert.minStock || 10
+                    }));
+                    setProducts(formatted.slice(0, 5)); // Show top 5
                 }
             } catch (error) {
                 console.error("Failed to fetch low stock products", error);

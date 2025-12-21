@@ -36,8 +36,8 @@ export default function DeliveriesPage() {
         async function fetchDeliveries() {
             try {
                 const [deliveriesRes, warehousesRes] = await Promise.all([
-                    api.axiosInstance.get('/api/v1/stock-movements?type=delivery'),
-                    api.axiosInstance.get('/api/v1/warehouses')
+                    api.axiosInstance.get('/movements?type=delivery'),
+                    api.axiosInstance.get('/warehouses')
                 ]);
                 
                 if (deliveriesRes.data) {

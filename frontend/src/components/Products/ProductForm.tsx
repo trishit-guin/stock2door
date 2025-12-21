@@ -54,7 +54,7 @@ export function ProductForm() {
         };
 
         try {
-            await api.axiosInstance.post('/api/v1/products', payload);
+            await api.axiosInstance.post('/products', payload);
             router.push("/products");
             router.refresh();
         } catch (error: any) {

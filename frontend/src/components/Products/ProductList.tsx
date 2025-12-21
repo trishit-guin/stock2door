@@ -42,10 +42,11 @@ export function ProductList() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const response = await api.axiosInstance.get('/api/v1/products');
+                const response = await api.axiosInstance.get('/products');
                 if (response.data) {
-                    setProducts(response.data);
-                    setFilteredProducts(response.data);
+                    const productsData = response.data.data || response.data;
+                    setProducts(Array.isArray(productsData) ? productsData : []);
+                    setFilteredProducts(Array.isArray(productsData) ? productsData : []);
                 }
             } catch (error) {
                 console.error("Failed to fetch data", error);

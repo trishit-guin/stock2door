@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-fallback-secret-key";
 export interface UserPayload {
     userId: string;
     email: string;
-    role: "admin" | "logistics_manager" | "fleet_operator" | "sustainability_manager" | "manager" | "staff";
+    role: "admin" | "inventory_manager" | "warehouse_staff" | "environment_manager" | "auditor";
 }
 
 /**
@@ -31,22 +31,6 @@ export async function getCurrentUser(): Promise<UserPayload | null> {
 }
 
 /**
- * Check if current user has manager role (warehouse manager)
- */
-export async function isManager(): Promise<boolean> {
-    const user = await getCurrentUser();
-    return user?.role === "manager";
-}
-
-/**
- * Check if current user has staff role (warehouse staff)
- */
-export async function isStaff(): Promise<boolean> {
-    const user = await getCurrentUser();
-    return user?.role === "staff";
-}
-
-/**
  * Check if current user has admin role
  */
 export async function isAdmin(): Promise<boolean> {
@@ -55,25 +39,17 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 /**
- * Check if current user has logistics manager role
- */
-export async function isLogisticsManager(): Promise<boolean> {
-    const user = await getCurrentUser();
-    return user?.role === "logistics_manager";
-}
-
-/**
- * Check if current user has access to inventory features (manager, staff, or admin)
+ * Check if current user has inventory access
  */
 export async function hasInventoryAccess(): Promise<boolean> {
     const user = await getCurrentUser();
-    return user?.role === "manager" || user?.role === "staff" || user?.role === "admin";
+    return user?.role === "inventory_manager" || user?.role === "warehouse_staff" || user?.role === "admin";
 }
 
 /**
- * Check if current user has access to logistics features (logistics_manager, fleet_operator, sustainability_manager, or admin)
+ * Check if current user has warehouse operations access
  */
-export async function hasLogisticsAccess(): Promise<boolean> {
+export async function hasWarehouseAccess(): Promise<boolean> {
     const user = await getCurrentUser();
-    return user?.role === "logistics_manager" || user?.role === "fleet_operator" || user?.role === "sustainability_manager" || user?.role === "admin";
+    return user?.role === "warehouse_staff" || user?.role === "admin";
 }

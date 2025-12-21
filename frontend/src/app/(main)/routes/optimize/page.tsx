@@ -31,7 +31,7 @@ export default function RouteOptimizationPage() {
 
     async function fetchRoutes() {
         try {
-            const response = await api.axiosInstance.get('/api/v1/deliveries');
+            const response = await api.axiosInstance.get('/deliveries');
             if (response.data) {
                 setRoutes(response.data.data || response.data.deliveries || []);
             }
@@ -51,7 +51,7 @@ export default function RouteOptimizationPage() {
             // For route optimization, we need warehouse IDs from the selected delivery/route
             const route = routes.find(r => r._id === selectedRoute);
             
-            const response = await api.axiosInstance.post('/api/v1/routes/optimize', {
+            const response = await api.axiosInstance.post('/routes/optimize', {
                 sourceWarehouseId: route?.sourceWarehouseId || route?.warehouseId,
                 destinationWarehouseId: route?.destinationWarehouseId || route?.deliveryLocation,
                 transportMode: optimizationType === 'balanced' ? 'TRUCK' : 

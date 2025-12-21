@@ -36,8 +36,8 @@ export default function ReceiptsPage() {
         async function fetchReceipts() {
             try {
                 const [receiptsRes, warehousesRes] = await Promise.all([
-                    api.axiosInstance.get('/api/v1/stock-movements?type=receipt'),
-                    api.axiosInstance.get('/api/v1/warehouses')
+                    api.axiosInstance.get('/movements?type=receipt'),
+                    api.axiosInstance.get('/warehouses')
                 ]);
                 
                 if (receiptsRes.data) {
@@ -91,7 +91,7 @@ export default function ReceiptsPage() {
 
     async function validateReceipt(id: string) {
         try {
-            await api.axiosInstance.put(`/api/v1/stock-movements/${id}`, { status: "done" });
+            await api.axiosInstance.put(`/movements/${id}`, { status: "done" });
             // Refresh list
             const updated = receipts.map(r => r._id === id ? { ...r, status: "done" } : r);
             setReceipts(updated);

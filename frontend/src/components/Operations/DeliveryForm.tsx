@@ -24,8 +24,8 @@ export function DeliveryForm() {
         async function fetchData() {
             try {
                 const [productsRes, warehousesRes] = await Promise.all([
-                    api.axiosInstance.get('/api/v1/products'),
-                    api.axiosInstance.get('/api/v1/warehouses')
+                    api.axiosInstance.get('/products'),
+                    api.axiosInstance.get('/warehouses')
                 ]);
 
                 if (productsRes.data) {
@@ -76,7 +76,7 @@ export function DeliveryForm() {
         };
 
         try {
-            await api.axiosInstance.post('/api/v1/stock-movements', payload);
+            await api.axiosInstance.post('/movements', payload);
             router.push("/operations/deliveries");
             router.refresh();
         } catch (error: any) {

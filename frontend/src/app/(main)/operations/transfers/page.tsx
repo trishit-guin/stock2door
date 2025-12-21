@@ -36,8 +36,8 @@ export default function TransfersPage() {
         async function fetchTransfers() {
             try {
                 const [transfersRes, warehousesRes] = await Promise.all([
-                    api.axiosInstance.get('/api/v1/stock-movements?type=transfer'),
-                    api.axiosInstance.get('/api/v1/warehouses')
+                    api.axiosInstance.get('/movements?type=transfer'),
+                    api.axiosInstance.get('/warehouses')
                 ]);
                 
                 if (transfersRes.data) {

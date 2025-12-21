@@ -10,10 +10,14 @@ export function DashboardBanner({ userName = "there", userRole = "inventory_mana
         switch(userRole) {
             case 'admin':
                 return 'Admin Dashboard - Monitor and oversee all operations';
-            case 'logistics_manager':
-                return 'Logistics Manager Dashboard - Oversee deliveries and fleet operations';
             case 'inventory_manager':
                 return 'Inventory Manager Dashboard - Oversee and optimize inventory operations';
+            case 'warehouse_staff':
+                return 'Warehouse Operations Dashboard - Manage daily warehouse operations';
+            case 'environment_manager':
+                return 'Environment Manager Dashboard - Track sustainability metrics';
+            case 'auditor':
+                return 'Auditor Dashboard - Review and audit system activities';
             default:
                 return 'Dashboard - Manage your operations';
         }

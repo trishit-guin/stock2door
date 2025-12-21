@@ -126,10 +126,7 @@ export default function LoginPage() {
 
                     {/* Footer */}
                     <div className="text-center text-sm text-gray-600">
-                        Don't have an account?{" "}
-                        <Link href="/signup" className="font-semibold text-[#1A73E8] hover:text-[#1557b0] hover:underline">
-                            Sign Up
-                        </Link>
+                        Users can only be created by administrators.
                     </div>
                 </div>
             </div>

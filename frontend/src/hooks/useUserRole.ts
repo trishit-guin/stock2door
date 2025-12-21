@@ -23,7 +23,7 @@ export function useUserRole() {
     }, []);
 
     const isAdmin = userRole === 'admin';
-    const isReadOnly = isAdmin; // Admin has read-only access
+    const isReadOnly = userRole === 'auditor'; // Only auditor has read-only access
 
     return {
         userRole,
